@@ -1,2 +1,281 @@
+from sqlalchemy.orm import Session
+from fastapi import HTTPException, status
+from uuid import UUID
+from datetime import date
+from typing import List, Dict, Any
+
+from app.database.models import AttendanceSession, Attendance, Student, Subject, Slot, Timetable
+from app.schemas.attendance import (
+    AttendanceSessionCreate,
+    SessionStudentResponse,
+    AttendanceMarkRequest,
+    SessionAttendanceViewResponse,
+    AttendanceRecordView,
+    AttendanceRecordUpdate,
+    SubjectSubstitutionRequest,
+    SessionDetailsResponse
+)
+from app.services.class_service import ClassService
+from app.services.slot_service import SlotService
+from app.services.subject_service import SubjectService
+from app.services.staff_service import StaffService
+
+
 class AttendanceService:
-    pass
+    @staticmethod
+    def get_session(db: Session, session_id: UUID) -> AttendanceSession:
+        session = db.query(AttendanceSession).filter(
+            AttendanceSession.session_id == session_id
+        ).first()
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Attendance session with ID '{session_id}' not found."
+            )
+        return session
+
+    @staticmethod
+    def create_session(
+        db: Session,
+        session_in: AttendanceSessionCreate,
+        creator_id: UUID
+    ) -> AttendanceSession:
+        # Validate foreign keys
+        ClassService.get(db, session_in.class_id)
+        SlotService.get(db, session_in.slot_id)
+        StaffService.get(db, session_in.staff_id)
+        subject = SubjectService.get(db, session_in.subject_id)
+
+        # Validate subject belongs to class
+        if subject.class_id != session_in.class_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The specified subject does not belong to this class."
+            )
+
+        # Prevent duplicate sessions (unique class_id, session_date, slot_id)
+        existing = db.query(AttendanceSession).filter(
+            AttendanceSession.class_id == session_in.class_id,
+            AttendanceSession.session_date == session_in.session_date,
+            AttendanceSession.slot_id == session_in.slot_id
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="An attendance session already exists for this class, date, and slot."
+            )
+
+        db_session = AttendanceSession(
+            class_id=session_in.class_id,
+            session_date=session_in.session_date,
+            slot_id=session_in.slot_id,
+            subject_id=session_in.subject_id,
+            staff_id=session_in.staff_id,
+            created_by_student_id=creator_id,
+            remarks=session_in.remarks
+        )
+        db.add(db_session)
+        db.commit()
+        db.refresh(db_session)
+        return db_session
+
+    @staticmethod
+    def get_students_for_session(
+        db: Session,
+        session_id: UUID
+    ) -> List[SessionStudentResponse]:
+        session = AttendanceService.get_session(db, session_id)
+
+        # Fetch all students in the class
+        students = db.query(Student).filter(
+            Student.class_id == session.class_id
+        ).order_by(Student.register_no).all()
+
+        # Build list with default 'P' status
+        return [
+            SessionStudentResponse(
+                student_id=s.student_id,
+                register_no=s.register_no,
+                student_name=s.student_name,
+                status="P"
+            )
+            for s in students
+        ]
+
+    @staticmethod
+    def mark_attendance(
+        db: Session,
+        request: AttendanceMarkRequest
+    ) -> None:
+        session = AttendanceService.get_session(db, request.session_id)
+
+        # Fetch class students
+        students = db.query(Student).filter(
+            Student.class_id == session.class_id
+        ).all()
+        student_ids = {s.student_id for s in students}
+
+        # Validate that absentees and OD students belong to this class
+        for abs_id in request.absentees:
+            if abs_id not in student_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Student ID '{abs_id}' does not belong to this class."
+                )
+
+        for od in request.od_students:
+            if od.student_id not in student_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Student ID '{od.student_id}' does not belong to this class."
+                )
+
+        # Remove existing attendance entries for this session (for idempotency)
+        db.query(Attendance).filter(
+            Attendance.session_id == request.session_id
+        ).delete()
+
+        absentees_set = set(request.absentees)
+        od_map = {od.student_id: od.od_reason for od in request.od_students}
+
+        # Record attendance
+        for s in students:
+            status_val = "P"
+            od_reason_val = None
+
+            if s.student_id in absentees_set:
+                status_val = "A"
+            elif s.student_id in od_map:
+                status_val = "OD"
+                od_reason_val = od_map[s.student_id]
+
+            db_record = Attendance(
+                session_id=request.session_id,
+                student_id=s.student_id,
+                status=status_val,
+                od_reason=od_reason_val
+            )
+            db.add(db_record)
+
+        db.commit()
+
+    @staticmethod
+    def view_attendance(
+        db: Session,
+        session_id: UUID
+    ) -> SessionAttendanceViewResponse:
+        session = AttendanceService.get_session(db, session_id)
+        subject = db.query(Subject).filter(Subject.subject_id == session.subject_id).first()
+        slot = db.query(Slot).filter(Slot.slot_id == session.slot_id).first()
+
+        records = db.query(Attendance).filter(
+            Attendance.session_id == session_id
+        ).all()
+
+        attendance_list = []
+        for r in records:
+            stud = db.query(Student).filter(Student.student_id == r.student_id).first()
+            attendance_list.append(AttendanceRecordView(
+                student_name=stud.student_name if stud else "Unknown Student",
+                status=r.status,
+                od_reason=r.od_reason
+            ))
+
+        return SessionAttendanceViewResponse(
+            session_id=session_id,
+            subject_name=subject.subject_name if subject else "Unknown Subject",
+            session_date=session.session_date,
+            slot_no=slot.slot_no if slot else 0,
+            attendance=attendance_list
+        )
+
+    @staticmethod
+    def edit_attendance(
+        db: Session,
+        session_id: UUID,
+        updates: List[AttendanceRecordUpdate]
+    ) -> None:
+        # Verify session exists
+        AttendanceService.get_session(db, session_id)
+
+        for up in updates:
+            record = db.query(Attendance).filter(
+                Attendance.session_id == session_id,
+                Attendance.student_id == up.student_id
+            ).first()
+
+            if not record:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Attendance record for student ID '{up.student_id}' not found in this session."
+                )
+
+            record.status = up.status
+            record.od_reason = up.od_reason if up.status == "OD" else None
+
+        db.commit()
+
+    @staticmethod
+    def update_session_subject(
+        db: Session,
+        session_id: UUID,
+        sub_in: SubjectSubstitutionRequest
+    ) -> AttendanceSession:
+        db_session = AttendanceService.get_session(db, session_id)
+
+        # Verify new subject exists
+        new_subject = SubjectService.get(db, sub_in.subject_id)
+
+        # Subject must belong to class
+        if new_subject.class_id != db_session.class_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New subject does not belong to the class of this session."
+            )
+
+        db_session.subject_id = sub_in.subject_id
+        if sub_in.remarks:
+            db_session.remarks = sub_in.remarks
+
+        db.commit()
+        db.refresh(db_session)
+        return db_session
+
+    @staticmethod
+    def get_session_details(
+        db: Session,
+        session_id: UUID
+    ) -> SessionDetailsResponse:
+        session = AttendanceService.get_session(db, session_id)
+
+        # 1. Determine planned subject name from timetable using (class, day_of_week, slot_id)
+        # session_date.isoweekday() returns 1 (Monday) to 7 (Sunday)
+        day_of_week = session.session_date.isoweekday()
+
+        timetable_entry = db.query(Timetable).filter(
+            Timetable.class_id == session.class_id,
+            Timetable.day_of_week == day_of_week,
+            Timetable.slot_id == session.slot_id
+        ).first()
+
+        planned_subject_name = "No Planned Class"
+        if timetable_entry:
+            planned_sub = db.query(Subject).filter(Subject.subject_id == timetable_entry.subject_id).first()
+            if planned_sub:
+                planned_subject_name = planned_sub.subject_name
+
+        # 2. Get conducted subject
+        conducted_sub = db.query(Subject).filter(Subject.subject_id == session.subject_id).first()
+        conducted_subject_name = conducted_sub.subject_name if conducted_sub else "Unknown"
+
+        # 3. Get slot number
+        slot = db.query(Slot).filter(Slot.slot_id == session.slot_id).first()
+        slot_no = slot.slot_no if slot else 0
+
+        return SessionDetailsResponse(
+            session_date=session.session_date,
+            slot_no=slot_no,
+            planned_subject=planned_subject_name,
+            conducted_subject=conducted_subject_name,
+            remarks=session.remarks
+        )

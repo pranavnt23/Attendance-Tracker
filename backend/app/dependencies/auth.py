@@ -31,3 +31,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+
+def require_attendance_rep(current_user: Student = Depends(get_current_user)):
+    if current_user.role != "attendance_rep":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden. Only attendance representatives can perform this action."
+        )
+    return current_user
+

@@ -1,12 +1,34 @@
-from pydantic import BaseModel
-from typing import List, Dict, Any
+from pydantic import BaseModel, Field
+from uuid import UUID
+from typing import List
 
 
-class AttendanceReportRequest(BaseModel):
-    class_id: str
-    start_date: str
-    end_date: str
+class StudentAttendanceSummary(BaseModel):
+    student_id: UUID
+    register_no: str
+    student_name: str
+    conducted_hours: int
+    present_hours: int
+    absent_hours: int
+    od_hours: int
+    attendance_percentage: float
 
 
-class AttendanceReportResponse(BaseModel):
-    report_data: List[Dict[str, Any]]
+class ClassAttendanceReportResponse(BaseModel):
+    class_id: UUID
+    class_name: str
+    students_attendance: List[StudentAttendanceSummary]
+
+
+class SubjectAttendanceReportResponse(BaseModel):
+    subject_id: UUID
+    subject_code: str
+    subject_name: str
+    students_attendance: List[StudentAttendanceSummary]
+
+
+class ShortageReportResponse(BaseModel):
+    class_id: UUID
+    class_name: str
+    threshold: float
+    students_shortage: List[StudentAttendanceSummary]
