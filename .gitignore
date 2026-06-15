@@ -28,6 +28,25 @@ logs/
 Thumbs.db
 .DS_Store
 
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+backend/venv/
+
+# Python Cache & Builds
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
 # Temporary files
 tmp/
 temp/
