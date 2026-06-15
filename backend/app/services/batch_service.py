@@ -1,0 +1,2 @@
+class BatchService:
+    pass

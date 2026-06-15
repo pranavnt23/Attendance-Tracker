@@ -1,0 +1,2 @@
+class SlotService:
+    pass
