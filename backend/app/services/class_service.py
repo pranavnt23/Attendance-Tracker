@@ -1,0 +1,2 @@
+class ClassService:
+    pass
