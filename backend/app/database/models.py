@@ -217,6 +217,10 @@ class Student(Base):
         nullable=False
     )
 
+    otp_code = Column(String(6), nullable=True)
+    otp_expiry = Column(DateTime, nullable=True)
+    otp_verified = Column(Boolean, nullable=False, default=False, server_default='false')
+
     # Relationships
     class_ref = relationship("Class", back_populates="students")
     attendance = relationship(

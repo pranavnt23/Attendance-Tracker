@@ -32,3 +32,53 @@ class LoginResponse(BaseModel):
                 "role": "attendance_rep"
             }
         }
+
+
+class ForgotPasswordRequest(BaseModel):
+    register_no: str = Field(
+        ...,
+        min_length=1,
+        description="The unique register/roll number of the student"
+    )
+
+
+class ForgotPasswordResponse(BaseModel):
+    success: bool = Field(..., description="Indicates if the action was successful")
+    message: str = Field(..., description="Response message detailing the result")
+
+
+class VerifyOtpRequest(BaseModel):
+    register_no: str = Field(
+        ...,
+        min_length=1,
+        description="The unique register/roll number of the student"
+    )
+    otp: str = Field(
+        ...,
+        min_length=6,
+        max_length=6,
+        description="The 6-digit OTP code"
+    )
+
+
+class VerifyOtpResponse(BaseModel):
+    success: bool = Field(..., description="Indicates if the action was successful")
+    message: str = Field(..., description="Response message detailing the result")
+
+
+class ResetPasswordRequest(BaseModel):
+    register_no: str = Field(
+        ...,
+        min_length=1,
+        description="The unique register/roll number of the student"
+    )
+    new_password: str = Field(
+        ...,
+        min_length=6,
+        description="The new password to set for the student"
+    )
+
+
+class ResetPasswordResponse(BaseModel):
+    success: bool = Field(..., description="Indicates if the action was successful")
+    message: str = Field(..., description="Response message detailing the result")

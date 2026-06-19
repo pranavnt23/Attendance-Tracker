@@ -12,3 +12,5 @@ python-jose[cryptography]
 
 pydantic
 email-validator
+fastapi-mail
+
