@@ -15,7 +15,9 @@ from app.routes import (
     subjects,
     subject_staff,
     slots,
-    reports
+    reports,
+    student_dashboard,
+    student_subjects
 )
 
 app = FastAPI(
@@ -46,6 +48,9 @@ app.include_router(subjects.router)
 app.include_router(subject_staff.router)
 app.include_router(slots.router)
 app.include_router(reports.router)
+app.include_router(student_dashboard.router)
+app.include_router(student_subjects.router)
+
 
 
 @app.get("/")

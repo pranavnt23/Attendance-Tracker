@@ -2,15 +2,12 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
-import os
 
 from app.database.db import get_db
 from app.database.models import Student
+from app.utils.security import SECRET_KEY as JWT_SECRET, ALGORITHM as JWT_ALGORITHM
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-
-JWT_SECRET = os.getenv("JWT_SECRET", "fallback-secret-for-dev-only")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -31,3 +28,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+
+def require_attendance_rep(current_user: Student = Depends(get_current_user)):
+    if current_user.role != "attendance_rep":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden. Only attendance representatives can perform this action."
+        )
+    return current_user
+

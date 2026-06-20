@@ -1,0 +1,412 @@
+from sqlalchemy.orm import Session
+from fastapi import HTTPException, status
+from uuid import UUID
+from datetime import date, time
+from typing import List, Dict, Any
+
+from app.database.models import (
+    Student, Class, Batch, Course, Department,
+    Subject, Attendance, AttendanceSession, Timetable, Slot, SubjectStaff, Staff, StudentSubject
+)
+from app.schemas.dashboard import (
+    StudentProfileResponse,
+    OverallAttendanceResponse,
+    SubjectWiseAttendanceResponse,
+    AttendanceHistoryResponse,
+    StaticTimetableResponse,
+    StaticTimetableSlot,
+    ActualTimetableSlot,
+    SubjectDetailsResponse
+)
+
+
+class DashboardService:
+    @staticmethod
+    def get_profile(db: Session, student_id: UUID) -> StudentProfileResponse:
+        student = db.query(Student).filter(Student.student_id == student_id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student profile not found."
+            )
+
+        class_obj = db.query(Class).filter(Class.class_id == student.class_id).first()
+        if not class_obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Associated class not found."
+            )
+
+        batch = db.query(Batch).filter(Batch.batch_id == class_obj.batch_id).first()
+        course = db.query(Course).filter(Course.course_id == batch.course_id).first() if batch else None
+        department = db.query(Department).filter(
+            Department.department_id == course.department_id
+        ).first() if course else None
+
+        return StudentProfileResponse(
+            student_id=student.student_id,
+            register_no=student.register_no,
+            student_name=student.student_name,
+            email=student.email,
+            role=student.role,
+            class_name=class_obj.class_name,
+            semester=class_obj.current_semester,
+            course_name=course.course_name if course else "Unknown Course",
+            department_name=department.department_name if department else "Unknown Department"
+        )
+
+    @staticmethod
+    def get_overall_attendance(db: Session, student_id: UUID) -> OverallAttendanceResponse:
+        # Fetch all attendance records for the student where the subject is compulsory or mapped
+        records = db.query(Attendance).join(
+            AttendanceSession, Attendance.session_id == AttendanceSession.session_id
+        ).join(
+            Subject, AttendanceSession.subject_id == Subject.subject_id
+        ).outerjoin(
+            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
+        ).filter(
+            Attendance.student_id == student_id,
+            ((Subject.attendance_required == True) & (Subject.subject_type.in_(["Theory", "Lab", "Activity"]))) |
+            (StudentSubject.mapping_id.isnot(None))
+        ).all()
+
+        conducted = len(records)
+        present = sum(1 for r in records if r.status == "P")
+        absent = sum(1 for r in records if r.status == "A")
+        od = sum(1 for r in records if r.status == "OD")
+
+        # Treating OD exactly like A (absent) while calculating percentage
+        # percentage = (present / conducted) * 100
+        percentage = 100.0
+        if conducted > 0:
+            percentage = round((present / conducted) * 100, 2)
+
+        return OverallAttendanceResponse(
+            conducted_hours=conducted,
+            present_hours=present,
+            absent_hours=absent,
+            od_hours=od,
+            attendance_percentage=percentage
+        )
+
+    @staticmethod
+    def get_subject_wise_attendance(
+        db: Session,
+        student_id: UUID
+    ) -> List[SubjectWiseAttendanceResponse]:
+        student = db.query(Student).filter(Student.student_id == student_id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student not found."
+            )
+
+        # Get all subjects belonging to the student's class (either compulsory OR mapped elective)
+        subjects = db.query(Subject).outerjoin(
+            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
+        ).filter(
+            Subject.class_id == student.class_id,
+            ((Subject.attendance_required == True) & (Subject.subject_type.in_(["Theory", "Lab", "Activity"]))) |
+            (StudentSubject.mapping_id.isnot(None))
+        ).all()
+
+        results = []
+        for sub in subjects:
+            # Query all attendance records for this student and this subject
+            records = db.query(Attendance).join(
+                AttendanceSession, Attendance.session_id == AttendanceSession.session_id
+            ).filter(
+                Attendance.student_id == student_id,
+                AttendanceSession.subject_id == sub.subject_id
+            ).all()
+
+            conducted = len(records)
+            present = sum(1 for r in records if r.status == "P")
+            absent = sum(1 for r in records if r.status == "A")
+            od = sum(1 for r in records if r.status == "OD")
+
+            # Calculate percentage, treating OD as absent (only status "P" counts as present)
+            percentage = 100.0
+            if conducted > 0:
+                percentage = round((present / conducted) * 100, 2)
+
+            results.append(SubjectWiseAttendanceResponse(
+                subject_id=sub.subject_id,
+                subject_code=sub.subject_code,
+                subject_name=sub.subject_name,
+                conducted_hours=conducted,
+                present_hours=present,
+                absent_hours=absent,
+                od_hours=od,
+                attendance_percentage=percentage
+            ))
+
+        return results
+
+    @staticmethod
+    def get_attendance_history(
+        db: Session,
+        student_id: UUID
+    ) -> List[AttendanceHistoryResponse]:
+        # Fetch student attendance joined with session details where the subject is compulsory or mapped
+        records = db.query(Attendance).join(
+            AttendanceSession, Attendance.session_id == AttendanceSession.session_id
+        ).join(
+            Subject, AttendanceSession.subject_id == Subject.subject_id
+        ).outerjoin(
+            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
+        ).filter(
+            Attendance.student_id == student_id,
+            ((Subject.attendance_required == True) & (Subject.subject_type.in_(["Theory", "Lab", "Activity"]))) |
+            (StudentSubject.mapping_id.isnot(None))
+        ).order_by(
+            AttendanceSession.session_date.desc(),
+            AttendanceSession.created_at.desc()
+        ).all()
+
+        results = []
+        for r in records:
+            session = db.query(AttendanceSession).filter(
+                AttendanceSession.session_id == r.session_id
+            ).first()
+            if not session:
+                continue
+
+            sub = db.query(Subject).filter(Subject.subject_id == session.subject_id).first()
+            slot = db.query(Slot).filter(Slot.slot_id == session.slot_id).first()
+
+            # Derive day name dynamically
+            day_name = session.session_date.strftime("%A")
+
+            results.append(AttendanceHistoryResponse(
+                date=session.session_date,
+                day=day_name,
+                slot_no=slot.slot_no if slot else 0,
+                subject_name=sub.subject_name if sub else "Unknown Subject",
+                status=r.status
+            ))
+        return results
+
+    @staticmethod
+    def get_static_timetable(db: Session, student_id: UUID) -> StaticTimetableResponse:
+        student = db.query(Student).filter(Student.student_id == student_id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student not found."
+            )
+
+        # Filter timetable entries based on compulsory or mapped elective subjects
+        entries = db.query(Timetable).join(
+            Subject, Timetable.subject_id == Subject.subject_id
+        ).outerjoin(
+            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
+        ).filter(
+            Timetable.class_id == student.class_id,
+            (Subject.subject_type.in_(["Theory", "Lab", "Activity"])) |
+            (StudentSubject.mapping_id.isnot(None))
+        ).all()
+
+        day_timetable = {str(d): [] for d in range(1, 7)}
+
+        for entry in entries:
+            slot = db.query(Slot).filter(Slot.slot_id == entry.slot_id).first()
+            sub = db.query(Subject).filter(Subject.subject_id == entry.subject_id).first()
+
+            # Determine faculty name from subject staff mapping
+            mapping = db.query(SubjectStaff).filter(
+                SubjectStaff.subject_id == entry.subject_id,
+                SubjectStaff.is_incharge == True
+            ).first()
+
+            faculty_name = "TBD"
+            if mapping:
+                staff = db.query(Staff).filter(Staff.staff_id == mapping.staff_id).first()
+                if staff:
+                    faculty_name = staff.staff_name
+            else:
+                # Fallback to any assigned staff if no incharge is set
+                any_mapping = db.query(SubjectStaff).filter(
+                    SubjectStaff.subject_id == entry.subject_id
+                ).first()
+                if any_mapping:
+                    staff = db.query(Staff).filter(Staff.staff_id == any_mapping.staff_id).first()
+                    if staff:
+                        faculty_name = staff.staff_name
+
+            day_timetable[str(entry.day_of_week)].append(StaticTimetableSlot(
+                slot_no=slot.slot_no if slot else 0,
+                start_time=slot.start_time if slot else time(0, 0),
+                end_time=slot.end_time if slot else time(0, 0),
+                subject_code=sub.subject_code if sub else "TBD",
+                subject_name=sub.subject_name if sub else "Unknown Subject",
+                faculty_name=faculty_name
+            ))
+
+        # Sort each day's list by slot number
+        for day in day_timetable:
+            day_timetable[day].sort(key=lambda x: x.slot_no)
+
+        return StaticTimetableResponse(day_timetable=day_timetable)
+
+    @staticmethod
+    def get_actual_timetable(
+        db: Session,
+        student_id: UUID,
+        date_val: date
+    ) -> List[ActualTimetableSlot]:
+        student = db.query(Student).filter(Student.student_id == student_id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student not found."
+            )
+
+        day_of_week = date_val.isoweekday()
+        if day_of_week > 6:
+            # Sunday or invalid day, return empty
+            return []
+
+        # Get planned timetable entries (compulsory or mapped elective)
+        entries = db.query(Timetable).join(
+            Subject, Timetable.subject_id == Subject.subject_id
+        ).outerjoin(
+            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
+        ).filter(
+            Timetable.class_id == student.class_id,
+            Timetable.day_of_week == day_of_week,
+            (Subject.subject_type.in_(["Theory", "Lab", "Activity"])) |
+            (StudentSubject.mapping_id.isnot(None))
+        ).all()
+
+        # Group and sort by slot order
+        slots_mapped = []
+        for entry in entries:
+            slot = db.query(Slot).filter(Slot.slot_id == entry.slot_id).first()
+            if slot:
+                slots_mapped.append((slot, entry))
+        slots_mapped.sort(key=lambda x: x[0].slot_no)
+
+        results = []
+        for slot, entry in slots_mapped:
+            # Check if there is an actual attendance session conducted (with parallel/substitution support)
+            sessions = db.query(AttendanceSession).filter(
+                AttendanceSession.class_id == student.class_id,
+                AttendanceSession.session_date == date_val,
+                AttendanceSession.slot_id == slot.slot_id
+            ).all()
+
+            session = None
+            # 1. First, look for a session matching the planned subject
+            for s in sessions:
+                if s.subject_id == entry.subject_id:
+                    session = s
+                    break
+
+            # 2. If not found, look for any substitution session the student is eligible for
+            if not session:
+                for s in sessions:
+                    sub = db.query(Subject).filter(Subject.subject_id == s.subject_id).first()
+                    if sub:
+                        if sub.subject_type in ["Theory", "Lab", "Activity"]:
+                            session = s
+                            break
+                        elif sub.subject_type in ["Elective Theory", "Elective Lab"]:
+                            mapping = db.query(StudentSubject).filter(
+                                StudentSubject.student_id == student_id,
+                                StudentSubject.subject_id == sub.subject_id
+                            ).first()
+                            if mapping:
+                                session = s
+                                break
+
+            # Determine actual display subject and faculty:
+            # ONLY use conducted details if attendance has been updated (marked) for this student.
+            # Otherwise, fallback to planned details.
+            att = None
+            if session:
+                att = db.query(Attendance).filter(
+                    Attendance.session_id == session.session_id,
+                    Attendance.student_id == student_id
+                ).first()
+
+            subject_name = ""
+            faculty_name = ""
+            status_val = "NOT_MARKED"
+
+            if session and att:
+                # Attendance is updated: show the conducted session's subject and faculty
+                sub = db.query(Subject).filter(Subject.subject_id == session.subject_id).first()
+                subject_name = sub.subject_name if sub else "Unknown Subject"
+
+                staff = db.query(Staff).filter(Staff.staff_id == session.staff_id).first()
+                faculty_name = staff.staff_name if staff else "Unknown Faculty"
+                status_val = att.status
+            else:
+                # Attendance is not updated yet: let it not show any data
+                subject_name = ""
+                faculty_name = ""
+                status_val = "NOT_MARKED"
+
+            results.append(ActualTimetableSlot(
+                slot_no=slot.slot_no,
+                start_time=slot.start_time,
+                end_time=slot.end_time,
+                subject_name=subject_name,
+                faculty=faculty_name,
+                attendance_status=status_val
+            ))
+        return results
+
+    @staticmethod
+    def get_subject_details(
+        db: Session,
+        student_id: UUID,
+        subject_id: UUID
+    ) -> SubjectDetailsResponse:
+        sub = db.query(Subject).filter(Subject.subject_id == subject_id).first()
+        if not sub:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Subject with ID '{subject_id}' not found."
+            )
+
+        # Validate that student is mapped to the elective subject
+        if sub.subject_type in ["Elective Theory", "Elective Lab"]:
+            mapping = db.query(StudentSubject).filter(
+                StudentSubject.student_id == student_id,
+                StudentSubject.subject_id == subject_id
+            ).first()
+            if not mapping:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Student is not mapped to this elective subject."
+                )
+
+        # Get attendance records
+        records = db.query(Attendance).join(
+            AttendanceSession, Attendance.session_id == AttendanceSession.session_id
+        ).filter(
+            Attendance.student_id == student_id,
+            AttendanceSession.subject_id == subject_id
+        ).all()
+
+        conducted = len(records)
+        present = sum(1 for r in records if r.status == "P")
+        absent = sum(1 for r in records if r.status == "A")
+        od = sum(1 for r in records if r.status == "OD")
+
+        # Treating OD exactly like A (absent) while calculating percentage
+        percentage = 100.0
+        if conducted > 0:
+            percentage = round((present / conducted) * 100, 2)
+
+        return SubjectDetailsResponse(
+            subject_name=sub.subject_name,
+            subject_code=sub.subject_code,
+            present_hours=present,
+            absent_hours=absent,
+            od_hours=od,
+            conducted_hours=conducted,
+            attendance_percentage=percentage
+        )
