@@ -85,6 +85,18 @@ async def get_static_timetable(
 
 
 @router.get(
+    "/timetable",
+    response_model=StaticTimetableResponse,
+    summary="Get static weekly class timetable (alias for /timetable/static)"
+)
+async def get_student_timetable(
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
+):
+    return DashboardService.get_static_timetable(db, current_user.student_id)
+
+
+@router.get(
     "/timetable/actual",
     response_model=List[ActualTimetableSlot],
     summary="Get actual class schedule for a specific date (combines substitutions and marked status)"

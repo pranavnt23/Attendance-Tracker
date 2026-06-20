@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
 
 
 class SubjectStaffBase(BaseModel):
@@ -42,3 +42,77 @@ class SubjectStaffResponse(SubjectStaffBase):
                 "is_incharge": True
             }
         }
+
+
+class SubjectAssignmentInput(BaseModel):
+    subject_id: UUID
+    is_incharge: bool = False
+
+
+class AssignSubjectsToStaffRequest(BaseModel):
+    staff_id: UUID
+    subjects: List[SubjectAssignmentInput]
+
+
+class StaffAssignmentInput(BaseModel):
+    staff_id: UUID
+    is_incharge: bool = False
+
+
+class AssignStaffsToSubjectRequest(BaseModel):
+    subject_id: UUID
+    staffs: List[StaffAssignmentInput]
+
+
+class ReplaceStaffSubjectsRequest(BaseModel):
+    subjects: List[SubjectAssignmentInput]
+
+
+class ReplaceSubjectStaffsRequest(BaseModel):
+    staffs: List[StaffAssignmentInput]
+
+
+class MatrixAssignmentInput(BaseModel):
+    subject_id: UUID
+    staff_id: UUID
+    is_incharge: bool = False
+
+
+class BulkMatrixAssignmentRequest(BaseModel):
+    mappings: List[MatrixAssignmentInput]
+
+
+class BulkMatrixAssignmentResponse(BaseModel):
+    total_requested: int
+    created_count: int
+    skipped_count: int
+
+
+class BulkMappingCreatedResponse(BaseModel):
+    created_count: int
+
+
+class StaffSubjectResponse(BaseModel):
+    subject_id: UUID
+    subject_code: str
+    subject_name: str
+    is_incharge: bool
+
+    class Config:
+        from_attributes = True
+
+
+class SubjectStaffMemberResponse(BaseModel):
+    staff_id: UUID
+    staff_name: str
+    staff_code: str
+    is_incharge: bool
+
+    class Config:
+        from_attributes = True
+
+
+class DeleteSubjectStaffRequest(BaseModel):
+    subject_id: UUID
+    staff_id: UUID
+

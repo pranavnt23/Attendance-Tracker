@@ -14,13 +14,6 @@ class SubjectService:
         # Verify class exists
         ClassService.get(db, subject_in.class_id)
 
-        # Validate credits >= 0 (handled by Pydantic ge=0, but good to double-check)
-        if subject_in.credits < 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Credits must be greater than or equal to 0."
-            )
-
         # Ensure subject_code is unique within the same class
         existing = db.query(Subject).filter(
             Subject.class_id == subject_in.class_id,
@@ -37,7 +30,6 @@ class SubjectService:
             subject_code=subject_in.subject_code,
             subject_name=subject_in.subject_name,
             subject_type=subject_in.subject_type,
-            credits=subject_in.credits,
             attendance_required=subject_in.attendance_required
         )
         db.add(db_subject)
@@ -70,13 +62,6 @@ class SubjectService:
         db_subject = SubjectService.get(db, subject_id)
 
         update_data = subject_in.model_dump(exclude_unset=True)
-
-        if "credits" in update_data:
-            if update_data["credits"] < 0:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Credits must be greater than or equal to 0."
-                )
 
         for key, value in update_data.items():
             setattr(db_subject, key, value)

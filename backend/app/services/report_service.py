@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from uuid import UUID
 from typing import List
 
-from app.database.models import Student, Class, Subject, Attendance, AttendanceSession
+from app.database.models import Student, Class, Subject, Attendance, AttendanceSession, StudentSubject
 from app.schemas.reports import (
     ClassAttendanceReportResponse,
     SubjectAttendanceReportResponse,
@@ -31,8 +31,16 @@ class ReportService:
 
         students_attendance = []
         for s in students:
-            records = db.query(Attendance).filter(
-                Attendance.student_id == s.student_id
+            records = db.query(Attendance).join(
+                AttendanceSession, Attendance.session_id == AttendanceSession.session_id
+            ).join(
+                Subject, AttendanceSession.subject_id == Subject.subject_id
+            ).outerjoin(
+                StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == s.student_id)
+            ).filter(
+                Attendance.student_id == s.student_id,
+                ((Subject.attendance_required == True) & (Subject.subject_type.in_(["Theory", "Lab", "Activity"]))) |
+                (StudentSubject.mapping_id.isnot(None))
             ).all()
 
             conducted = len(records)
@@ -75,10 +83,17 @@ class ReportService:
                 detail=f"Subject with ID '{subject_id}' not found."
             )
 
-        # Retrieve students in the class belonging to the subject
-        students = db.query(Student).filter(
-            Student.class_id == subject.class_id
-        ).order_by(Student.register_no).all()
+        # Retrieve students in the class belonging to the subject (only mapped students if elective)
+        if subject.subject_type in ["Elective Theory", "Elective Lab"]:
+            students = db.query(Student).join(
+                StudentSubject, Student.student_id == StudentSubject.student_id
+            ).filter(
+                StudentSubject.subject_id == subject_id
+            ).order_by(Student.register_no).all()
+        else:
+            students = db.query(Student).filter(
+                Student.class_id == subject.class_id
+            ).order_by(Student.register_no).all()
 
         students_attendance = []
         for s in students:
@@ -137,8 +152,16 @@ class ReportService:
 
         students_shortage = []
         for s in students:
-            records = db.query(Attendance).filter(
-                Attendance.student_id == s.student_id
+            records = db.query(Attendance).join(
+                AttendanceSession, Attendance.session_id == AttendanceSession.session_id
+            ).join(
+                Subject, AttendanceSession.subject_id == Subject.subject_id
+            ).outerjoin(
+                StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == s.student_id)
+            ).filter(
+                Attendance.student_id == s.student_id,
+                ((Subject.attendance_required == True) & (Subject.subject_type.in_(["Theory", "Lab", "Activity"]))) |
+                (StudentSubject.mapping_id.isnot(None))
             ).all()
 
             conducted = len(records)

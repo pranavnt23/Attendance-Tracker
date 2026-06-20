@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 
 from app.database.models import (
     Student, Class, Batch, Course, Department,
-    Subject, Attendance, AttendanceSession, Timetable, Slot, SubjectStaff, Staff
+    Subject, Attendance, AttendanceSession, Timetable, Slot, SubjectStaff, Staff, StudentSubject
 )
 from app.schemas.dashboard import (
     StudentProfileResponse,
@@ -57,9 +57,17 @@ class DashboardService:
 
     @staticmethod
     def get_overall_attendance(db: Session, student_id: UUID) -> OverallAttendanceResponse:
-        # Fetch all attendance records for the student
-        records = db.query(Attendance).filter(
-            Attendance.student_id == student_id
+        # Fetch all attendance records for the student where the subject is compulsory or mapped
+        records = db.query(Attendance).join(
+            AttendanceSession, Attendance.session_id == AttendanceSession.session_id
+        ).join(
+            Subject, AttendanceSession.subject_id == Subject.subject_id
+        ).outerjoin(
+            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
+        ).filter(
+            Attendance.student_id == student_id,
+            ((Subject.attendance_required == True) & (Subject.subject_type.in_(["Theory", "Lab", "Activity"]))) |
+            (StudentSubject.mapping_id.isnot(None))
         ).all()
 
         conducted = len(records)
@@ -93,8 +101,14 @@ class DashboardService:
                 detail="Student not found."
             )
 
-        # Get all subjects belonging to the student's class
-        subjects = db.query(Subject).filter(Subject.class_id == student.class_id).all()
+        # Get all subjects belonging to the student's class (either compulsory OR mapped elective)
+        subjects = db.query(Subject).outerjoin(
+            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
+        ).filter(
+            Subject.class_id == student.class_id,
+            ((Subject.attendance_required == True) & (Subject.subject_type.in_(["Theory", "Lab", "Activity"]))) |
+            (StudentSubject.mapping_id.isnot(None))
+        ).all()
 
         results = []
         for sub in subjects:
@@ -134,11 +148,17 @@ class DashboardService:
         db: Session,
         student_id: UUID
     ) -> List[AttendanceHistoryResponse]:
-        # Fetch student attendance joined with session details
+        # Fetch student attendance joined with session details where the subject is compulsory or mapped
         records = db.query(Attendance).join(
             AttendanceSession, Attendance.session_id == AttendanceSession.session_id
+        ).join(
+            Subject, AttendanceSession.subject_id == Subject.subject_id
+        ).outerjoin(
+            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
         ).filter(
-            Attendance.student_id == student_id
+            Attendance.student_id == student_id,
+            ((Subject.attendance_required == True) & (Subject.subject_type.in_(["Theory", "Lab", "Activity"]))) |
+            (StudentSubject.mapping_id.isnot(None))
         ).order_by(
             AttendanceSession.session_date.desc(),
             AttendanceSession.created_at.desc()
@@ -176,8 +196,15 @@ class DashboardService:
                 detail="Student not found."
             )
 
-        entries = db.query(Timetable).filter(
-            Timetable.class_id == student.class_id
+        # Filter timetable entries based on compulsory or mapped elective subjects
+        entries = db.query(Timetable).join(
+            Subject, Timetable.subject_id == Subject.subject_id
+        ).outerjoin(
+            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
+        ).filter(
+            Timetable.class_id == student.class_id,
+            (Subject.subject_type.in_(["Theory", "Lab", "Activity"])) |
+            (StudentSubject.mapping_id.isnot(None))
         ).all()
 
         day_timetable = {str(d): [] for d in range(1, 7)}
@@ -240,10 +267,16 @@ class DashboardService:
             # Sunday or invalid day, return empty
             return []
 
-        # Get planned timetable entries
-        entries = db.query(Timetable).filter(
+        # Get planned timetable entries (compulsory or mapped elective)
+        entries = db.query(Timetable).join(
+            Subject, Timetable.subject_id == Subject.subject_id
+        ).outerjoin(
+            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
+        ).filter(
             Timetable.class_id == student.class_id,
-            Timetable.day_of_week == day_of_week
+            Timetable.day_of_week == day_of_week,
+            (Subject.subject_type.in_(["Theory", "Lab", "Activity"])) |
+            (StudentSubject.mapping_id.isnot(None))
         ).all()
 
         # Group and sort by slot order
@@ -256,54 +289,64 @@ class DashboardService:
 
         results = []
         for slot, entry in slots_mapped:
-            # Check if there is an actual attendance session conducted (substitution override)
-            session = db.query(AttendanceSession).filter(
+            # Check if there is an actual attendance session conducted (with parallel/substitution support)
+            sessions = db.query(AttendanceSession).filter(
                 AttendanceSession.class_id == student.class_id,
                 AttendanceSession.session_date == date_val,
                 AttendanceSession.slot_id == slot.slot_id
-            ).first()
+            ).all()
+
+            session = None
+            # 1. First, look for a session matching the planned subject
+            for s in sessions:
+                if s.subject_id == entry.subject_id:
+                    session = s
+                    break
+
+            # 2. If not found, look for any substitution session the student is eligible for
+            if not session:
+                for s in sessions:
+                    sub = db.query(Subject).filter(Subject.subject_id == s.subject_id).first()
+                    if sub:
+                        if sub.subject_type in ["Theory", "Lab", "Activity"]:
+                            session = s
+                            break
+                        elif sub.subject_type in ["Elective Theory", "Elective Lab"]:
+                            mapping = db.query(StudentSubject).filter(
+                                StudentSubject.student_id == student_id,
+                                StudentSubject.subject_id == sub.subject_id
+                            ).first()
+                            if mapping:
+                                session = s
+                                break
+
+            # Determine actual display subject and faculty:
+            # ONLY use conducted details if attendance has been updated (marked) for this student.
+            # Otherwise, fallback to planned details.
+            att = None
+            if session:
+                att = db.query(Attendance).filter(
+                    Attendance.session_id == session.session_id,
+                    Attendance.student_id == student_id
+                ).first()
 
             subject_name = ""
             faculty_name = ""
             status_val = "NOT_MARKED"
 
-            if session:
-                # Conducted session details (substitution class support)
+            if session and att:
+                # Attendance is updated: show the conducted session's subject and faculty
                 sub = db.query(Subject).filter(Subject.subject_id == session.subject_id).first()
                 subject_name = sub.subject_name if sub else "Unknown Subject"
 
                 staff = db.query(Staff).filter(Staff.staff_id == session.staff_id).first()
                 faculty_name = staff.staff_name if staff else "Unknown Faculty"
-
-                # Find student's marked attendance status
-                att = db.query(Attendance).filter(
-                    Attendance.session_id == session.session_id,
-                    Attendance.student_id == student_id
-                ).first()
-                if att:
-                    status_val = att.status
+                status_val = att.status
             else:
-                # Planned session details
-                sub = db.query(Subject).filter(Subject.subject_id == entry.subject_id).first()
-                subject_name = sub.subject_name if sub else "Unknown Subject"
-
-                # Faculty in-charge
-                mapping = db.query(SubjectStaff).filter(
-                    SubjectStaff.subject_id == entry.subject_id,
-                    SubjectStaff.is_incharge == True
-                ).first()
-                if mapping:
-                    staff = db.query(Staff).filter(Staff.staff_id == mapping.staff_id).first()
-                    faculty_name = staff.staff_name if staff else "TBD"
-                else:
-                    any_mapping = db.query(SubjectStaff).filter(
-                        SubjectStaff.subject_id == entry.subject_id
-                    ).first()
-                    if any_mapping:
-                        staff = db.query(Staff).filter(Staff.staff_id == any_mapping.staff_id).first()
-                        faculty_name = staff.staff_name if staff else "TBD"
-                    else:
-                        faculty_name = "TBD"
+                # Attendance is not updated yet: let it not show any data
+                subject_name = ""
+                faculty_name = ""
+                status_val = "NOT_MARKED"
 
             results.append(ActualTimetableSlot(
                 slot_no=slot.slot_no,
@@ -327,6 +370,18 @@ class DashboardService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Subject with ID '{subject_id}' not found."
             )
+
+        # Validate that student is mapped to the elective subject
+        if sub.subject_type in ["Elective Theory", "Elective Lab"]:
+            mapping = db.query(StudentSubject).filter(
+                StudentSubject.student_id == student_id,
+                StudentSubject.subject_id == subject_id
+            ).first()
+            if not mapping:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Student is not mapped to this elective subject."
+                )
 
         # Get attendance records
         records = db.query(Attendance).join(

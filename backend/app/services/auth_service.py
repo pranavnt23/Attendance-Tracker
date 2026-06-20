@@ -17,7 +17,6 @@ from app.utils.security import verify_password, create_access_token, hash_passwo
 from app.utils.otp import generate_otp
 from app.utils.email import send_otp_email
 
-
 class AuthService:
     @staticmethod
     def login(db: Session, request: LoginRequest) -> LoginResponse:

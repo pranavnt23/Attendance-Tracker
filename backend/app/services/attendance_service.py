@@ -4,7 +4,7 @@ from uuid import UUID
 from datetime import date
 from typing import List, Dict, Any
 
-from app.database.models import AttendanceSession, Attendance, Student, Subject, Slot, Timetable
+from app.database.models import AttendanceSession, Attendance, Student, Subject, Slot, Timetable, StudentSubject
 from app.schemas.attendance import (
     AttendanceSessionCreate,
     SessionStudentResponse,
@@ -53,16 +53,17 @@ class AttendanceService:
                 detail="The specified subject does not belong to this class."
             )
 
-        # Prevent duplicate sessions (unique class_id, session_date, slot_id)
+        # Prevent duplicate sessions (unique class_id, session_date, slot_id, subject_id)
         existing = db.query(AttendanceSession).filter(
             AttendanceSession.class_id == session_in.class_id,
             AttendanceSession.session_date == session_in.session_date,
-            AttendanceSession.slot_id == session_in.slot_id
+            AttendanceSession.slot_id == session_in.slot_id,
+            AttendanceSession.subject_id == session_in.subject_id
         ).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="An attendance session already exists for this class, date, and slot."
+                detail="An attendance session already exists for this class, date, slot, and subject."
             )
 
         db_session = AttendanceSession(
@@ -85,11 +86,19 @@ class AttendanceService:
         session_id: UUID
     ) -> List[SessionStudentResponse]:
         session = AttendanceService.get_session(db, session_id)
+        subject = db.query(Subject).filter(Subject.subject_id == session.subject_id).first()
 
-        # Fetch all students in the class
-        students = db.query(Student).filter(
-            Student.class_id == session.class_id
-        ).order_by(Student.register_no).all()
+        if subject and subject.subject_type in ["Elective Theory", "Elective Lab"]:
+            students = db.query(Student).join(
+                StudentSubject, Student.student_id == StudentSubject.student_id
+            ).filter(
+                StudentSubject.subject_id == subject.subject_id
+            ).order_by(Student.register_no).all()
+        else:
+            # Fetch all students in the class
+            students = db.query(Student).filter(
+                Student.class_id == session.class_id
+            ).order_by(Student.register_no).all()
 
         # Build list with default 'P' status
         return [
@@ -108,26 +117,36 @@ class AttendanceService:
         request: AttendanceMarkRequest
     ) -> None:
         session = AttendanceService.get_session(db, request.session_id)
+        subject = db.query(Subject).filter(Subject.subject_id == session.subject_id).first()
 
-        # Fetch class students
-        students = db.query(Student).filter(
-            Student.class_id == session.class_id
-        ).all()
+        if subject and subject.subject_type in ["Elective Theory", "Elective Lab"]:
+            students = db.query(Student).join(
+                StudentSubject, Student.student_id == StudentSubject.student_id
+            ).filter(
+                StudentSubject.subject_id == subject.subject_id
+            ).order_by(Student.register_no).all()
+            error_detail = "is not mapped to this elective subject."
+        else:
+            students = db.query(Student).filter(
+                Student.class_id == session.class_id
+            ).order_by(Student.register_no).all()
+            error_detail = "does not belong to this class."
+
         student_ids = {s.student_id for s in students}
 
-        # Validate that absentees and OD students belong to this class
+        # Validate that absentees and OD students belong to this set
         for abs_id in request.absentees:
             if abs_id not in student_ids:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Student ID '{abs_id}' does not belong to this class."
+                    detail=f"Student ID '{abs_id}' {error_detail}"
                 )
 
         for od in request.od_students:
             if od.student_id not in student_ids:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Student ID '{od.student_id}' does not belong to this class."
+                    detail=f"Student ID '{od.student_id}' {error_detail}"
                 )
 
         # Remove existing attendance entries for this session (for idempotency)
@@ -237,6 +256,18 @@ class AttendanceService:
         if sub_in.remarks:
             db_session.remarks = sub_in.remarks
 
+        # If the subject changed, check if we need to remove attendance records for students who are no longer eligible
+        if new_subject.subject_type in ["Elective Theory", "Elective Lab"]:
+            eligible_student_ids = {
+                s[0] for s in db.query(StudentSubject.student_id).filter(
+                    StudentSubject.subject_id == new_subject.subject_id
+                ).all()
+            }
+            db.query(Attendance).filter(
+                Attendance.session_id == session_id,
+                ~Attendance.student_id.in_(eligible_student_ids)
+            ).delete(synchronize_session=False)
+
         db.commit()
         db.refresh(db_session)
         return db_session
@@ -252,11 +283,21 @@ class AttendanceService:
         # session_date.isoweekday() returns 1 (Monday) to 7 (Sunday)
         day_of_week = session.session_date.isoweekday()
 
+        # Try to find a planned entry matching the conducted subject first (parallel slots support)
         timetable_entry = db.query(Timetable).filter(
             Timetable.class_id == session.class_id,
             Timetable.day_of_week == day_of_week,
-            Timetable.slot_id == session.slot_id
+            Timetable.slot_id == session.slot_id,
+            Timetable.subject_id == session.subject_id
         ).first()
+
+        # If not found, try to find any timetable entry in this slot
+        if not timetable_entry:
+            timetable_entry = db.query(Timetable).filter(
+                Timetable.class_id == session.class_id,
+                Timetable.day_of_week == day_of_week,
+                Timetable.slot_id == session.slot_id
+            ).first()
 
         planned_subject_name = "No Planned Class"
         if timetable_entry:

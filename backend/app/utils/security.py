@@ -1,10 +1,14 @@
+import os
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
 from jose import jwt
 import bcrypt
 
-SECRET_KEY ="gsfnsdjfrdsklmksdm"
-ALGORITHM = "HS256"
+load_dotenv()
+
+SECRET_KEY = os.getenv("JWT_SECRET", "fallback-secret-for-dev-only")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 
 def hash_password(password: str) -> str:

@@ -25,16 +25,17 @@ class TimetableService:
                 detail=f"Subject with ID '{entry_in.subject_id}' does not belong to class '{entry_in.class_id}'."
             )
 
-        # Prevent duplicate entries (Same class + day_of_week + slot_id)
+        # Prevent duplicate entries (Same class + day_of_week + slot_id + subject_id)
         existing = db.query(Timetable).filter(
             Timetable.class_id == entry_in.class_id,
             Timetable.day_of_week == entry_in.day_of_week,
-            Timetable.slot_id == entry_in.slot_id
+            Timetable.slot_id == entry_in.slot_id,
+            Timetable.subject_id == entry_in.subject_id
         ).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A timetable entry already exists for this class, day, and slot."
+                detail="A timetable entry already exists for this class, day, slot, and subject."
             )
 
         db_entry = Timetable(
@@ -56,8 +57,8 @@ class TimetableService:
             
             # Cache sets for lookup optimization and tracking duplicates within the current upload batch
             existing_entries = set(
-                (t.class_id, t.day_of_week, t.slot_id) 
-                for t in db.query(Timetable.class_id, Timetable.day_of_week, Timetable.slot_id).all()
+                (t.class_id, t.day_of_week, t.slot_id, t.subject_id) 
+                for t in db.query(Timetable.class_id, Timetable.day_of_week, Timetable.slot_id, Timetable.subject_id).all()
             )
             batch_duplicates = set()
 
@@ -96,11 +97,11 @@ class TimetableService:
                     )
 
                 # 3. Check duplicate entries
-                entry_key = (entry.class_id, entry.day_of_week, entry.slot_id)
+                entry_key = (entry.class_id, entry.day_of_week, entry.slot_id, entry.subject_id)
                 if entry_key in existing_entries:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Timetable entry already exists for class '{entry.class_id}', day {entry.day_of_week}, slot '{entry.slot_id}'."
+                        detail=f"Timetable entry already exists for class '{entry.class_id}', day {entry.day_of_week}, slot '{entry.slot_id}', subject '{entry.subject_id}'."
                     )
                 if entry_key in batch_duplicates:
                     raise HTTPException(
@@ -157,7 +158,10 @@ class TimetableService:
             subject = db.query(Subject).filter(Subject.subject_id == entry.subject_id).first()
 
             slot_key = str(slot.slot_no) if slot else str(entry.slot_id)
-            grouped[day_str][slot_key] = {
+            if slot_key not in grouped[day_str]:
+                grouped[day_str][slot_key] = []
+            
+            grouped[day_str][slot_key].append({
                 "timetable_id": str(entry.timetable_id),
                 "slot_id": str(entry.slot_id),
                 "slot_no": slot.slot_no if slot else None,
@@ -166,7 +170,7 @@ class TimetableService:
                 "subject_id": str(entry.subject_id),
                 "subject_code": subject.subject_code if subject else None,
                 "subject_name": subject.subject_name if subject else None
-            }
+            })
         return grouped
 
     @staticmethod

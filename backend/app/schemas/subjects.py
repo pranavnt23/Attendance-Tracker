@@ -26,11 +26,6 @@ class SubjectBase(BaseModel):
         max_length=50,
         description="Type of the subject (e.g. Theory, Lab)"
     )
-    credits: int = Field(
-        ...,
-        ge=0,
-        description="Number of credits, must be greater than or equal to 0"
-    )
     attendance_required: bool = Field(
         True,
         description="Whether attendance is required for this subject"
@@ -44,7 +39,6 @@ class SubjectCreate(SubjectBase):
 class SubjectUpdate(BaseModel):
     subject_name: Optional[str] = Field(None, min_length=1, max_length=255)
     subject_type: Optional[str] = Field(None, min_length=1, max_length=50)
-    credits: Optional[int] = Field(None, ge=0)
     attendance_required: Optional[bool] = None
 
 
@@ -60,7 +54,6 @@ class SubjectResponse(SubjectBase):
                 "subject_code": "MSS601",
                 "subject_name": "Agile Methods",
                 "subject_type": "Theory",
-                "credits": 3,
                 "attendance_required": True
             }
         }

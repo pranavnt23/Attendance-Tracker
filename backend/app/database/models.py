@@ -9,7 +9,8 @@ from sqlalchemy import (
     Time,
     DateTime,
     ForeignKey,
-    Text
+    Text,
+    UniqueConstraint
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -235,6 +236,10 @@ class Student(Base):
         cascade="all, delete-orphan",
         passive_deletes=True
     )
+    student_subjects = relationship(
+        "StudentSubject",
+        cascade="all, delete-orphan"
+    )
 
 
 # =========================
@@ -281,6 +286,10 @@ class Subject(Base):
         back_populates="subject",
         cascade="all, delete-orphan",
         passive_deletes=True
+    )
+    student_subjects = relationship(
+        "StudentSubject",
+        cascade="all, delete-orphan"
     )
 
 
@@ -479,3 +488,47 @@ class PasswordReset(Base):
     expires_at = Column(DateTime(timezone=True), nullable=False)
     is_used = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# =========================
+# Student Subjects Mapping (Electives)
+# =========================
+
+class StudentSubject(Base):
+    __tablename__ = "student_subjects"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "student_id",
+            "subject_id",
+            name="uq_student_subject"
+        ),
+    )
+
+    mapping_id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4
+    )
+
+    student_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "students.student_id",
+            ondelete="CASCADE"
+        ),
+        nullable=False
+    )
+
+    subject_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "subjects.subject_id",
+            ondelete="CASCADE"
+        ),
+        nullable=False
+    )
+
+    # Relationships
+    student = relationship("Student", overlaps="student_subjects")
+    subject = relationship("Subject", overlaps="student_subjects")
