@@ -16,7 +16,7 @@ const StatCard = ({ title, value, icon: Icon, color = 'indigo', subtext }) => {
         <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
           {title}
         </p>
-        <p className="text-3xl font-display font-bold text-slate-900 dark:text-white truncate">
+        <p className="text-2xl sm:text-3xl font-display font-bold text-slate-900 dark:text-white break-words">
           {value}
         </p>
         {subtext && (

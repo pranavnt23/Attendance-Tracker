@@ -9,7 +9,7 @@ export const ATTENDANCE_STATUS = {
 export const STATUS_LABELS = {
   [ATTENDANCE_STATUS.PRESENT]: 'Present',
   [ATTENDANCE_STATUS.ABSENT]: 'Absent',
-  [ATTENDANCE_STATUS.OD]: 'Official Duty'
+  [ATTENDANCE_STATUS.OD]: 'On Duty'
 };
 
 export const STATUS_COLORS = {

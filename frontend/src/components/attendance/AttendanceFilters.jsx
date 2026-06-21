@@ -37,7 +37,7 @@ const AttendanceFilters = ({
             type="date"
             value={filters.date || ''}
             onChange={(e) => handleTextChange('date', e.target.value)}
-            className="w-full pl-10 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:border-brand-primary dark:focus:border-brand-primary"
+            className="w-full pl-10 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:border-brand-primary dark:focus:border-brand-primary text-slate-800 dark:text-slate-100"
           />
         </div>
 
@@ -63,7 +63,7 @@ const AttendanceFilters = ({
               placeholder="Search Subject..."
               value={filters.subject || ''}
               onChange={(e) => handleTextChange('subject', e.target.value)}
-              className="w-full pl-10 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:border-brand-primary dark:focus:border-brand-primary"
+              className="w-full pl-10 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:border-brand-primary dark:focus:border-brand-primary text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
             />
           )}
         </div>
@@ -104,7 +104,7 @@ const AttendanceFilters = ({
               <option value="all" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">All Statuses</option>
               <option value="P" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Present</option>
               <option value="A" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Absent</option>
-              <option value="OD" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Official Duty</option>
+              <option value="OD" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">On Duty</option>
             </select>
           </div>
         ) : (
@@ -114,7 +114,7 @@ const AttendanceFilters = ({
               placeholder="Search Faculty..."
               value={filters.faculty || ''}
               onChange={(e) => handleTextChange('faculty', e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:border-brand-primary dark:focus:border-brand-primary"
+              className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:border-brand-primary dark:focus:border-brand-primary text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
             />
           </div>
         )}

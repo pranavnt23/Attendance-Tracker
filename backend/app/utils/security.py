@@ -7,7 +7,10 @@ import bcrypt
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("JWT_SECRET", "fallback-secret-for-dev-only")
+SECRET_KEY = os.getenv("JWT_SECRET")
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET environment variable is required!")
+
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 

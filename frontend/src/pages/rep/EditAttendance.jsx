@@ -110,7 +110,7 @@ const EditAttendance = () => {
     // Validate OD reasons
     const missingODReason = updatedStudents.some(s => s.status === 'OD' && (!s.od_reason || s.od_reason.trim() === ''));
     if (missingODReason) {
-      setErrorMessage('Please provide an Official Duty (OD) reason for all students marked as OD.');
+      setErrorMessage('Please provide an On Duty (OD) reason for all students marked as OD.');
       setIsSaving(false);
       return;
     }
@@ -246,8 +246,8 @@ const EditAttendance = () => {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            {/* Split panels to show Original vs Updated */}
-            <div className="glass-panel border rounded-3xl shadow-sm overflow-hidden bg-slate-50/10">
+            {/* Desktop Table View - Hidden on Mobile */}
+            <div className="hidden lg:block glass-panel border rounded-3xl shadow-sm overflow-hidden bg-slate-50/10">
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left text-sm">
                   <thead>
@@ -308,7 +308,7 @@ const EditAttendance = () => {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleStudentChange(student.student_id, 'OD', student.od_reason || 'Official Duty')}
+                                  onClick={() => handleStudentChange(student.student_id, 'OD', student.od_reason || 'On Duty')}
                                   className={`flex-1 py-1 text-xs font-bold rounded-lg transition-all ${
                                     student.status === 'OD'
                                       ? 'bg-amber-500 text-white shadow-sm'
@@ -324,7 +324,7 @@ const EditAttendance = () => {
                                   placeholder="OD Reason (required)"
                                   value={student.od_reason || ''}
                                   onChange={(e) => handleStudentChange(student.student_id, 'OD', e.target.value)}
-                                  className="px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-205 dark:border-slate-700 focus:outline-none text-slate-700 dark:text-slate-350"
+                                  className="px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
                                   required
                                 />
                               )}
@@ -337,6 +337,85 @@ const EditAttendance = () => {
                 </table>
               </div>
             </div>
+
+            {/* Mobile Card Roster View - Hidden on Desktop */}
+            <div className="lg:hidden divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+              {updatedStudents.map((student) => {
+                const orig = originalStudents.find(o => o.student_id === student.student_id) || { status: 'P' };
+                const hasChanged = student.status !== orig.status || student.od_reason !== orig.od_reason;
+
+                return (
+                  <div 
+                    key={student.student_id} 
+                    className={`p-4 flex flex-col gap-3 transition-colors ${
+                      hasChanged ? 'bg-indigo-500/[0.02]' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
+                        {student.register_no}
+                      </span>
+                      <span className="text-xs font-bold text-slate-400 dark:text-slate-500">
+                        Original: <span className="font-extrabold text-slate-500 dark:text-slate-400">{orig.status} {orig.status === 'OD' && `(${orig.od_reason?.substring(0, 10)})`}</span>
+                      </span>
+                    </div>
+
+                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {student.student_name}
+                    </h4>
+
+                    <div className="flex flex-col gap-2">
+                      <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100/50 dark:bg-slate-800/40 w-full">
+                        <button
+                          type="button"
+                          onClick={() => handleStudentChange(student.student_id, 'P', null)}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all border-0 cursor-pointer ${
+                            student.status === 'P'
+                              ? 'bg-emerald-500 text-white shadow-sm'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          P
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStudentChange(student.student_id, 'A', null)}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all border-0 cursor-pointer ${
+                            student.status === 'A'
+                              ? 'bg-rose-500 text-white shadow-sm'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          A
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStudentChange(student.student_id, 'OD', student.od_reason || 'On Duty')}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all border-0 cursor-pointer ${
+                            student.status === 'OD'
+                              ? 'bg-amber-500 text-white shadow-sm'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          OD
+                        </button>
+                      </div>
+                      
+                      {student.status === 'OD' && (
+                        <input
+                          type="text"
+                          placeholder="OD Reason (required)"
+                          value={student.od_reason || ''}
+                          onChange={(e) => handleStudentChange(student.student_id, 'OD', e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-amber-500 dark:focus:border-amber-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
+                          required
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -345,7 +424,7 @@ const EditAttendance = () => {
           <button
             type="button"
             onClick={() => navigate(`/rep/sessions/${sessionId}`)}
-            className="px-6 py-2.5 rounded-xl border border-slate-205 dark:border-slate-850 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="px-6 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
             disabled={isSaving}
           >
             Cancel

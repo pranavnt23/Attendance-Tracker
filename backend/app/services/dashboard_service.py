@@ -10,7 +10,6 @@ from app.database.models import (
 )
 from app.schemas.dashboard import (
     StudentProfileResponse,
-    OverallAttendanceResponse,
     SubjectWiseAttendanceResponse,
     AttendanceHistoryResponse,
     StaticTimetableResponse,
@@ -53,40 +52,6 @@ class DashboardService:
             semester=class_obj.current_semester,
             course_name=course.course_name if course else "Unknown Course",
             department_name=department.department_name if department else "Unknown Department"
-        )
-
-    @staticmethod
-    def get_overall_attendance(db: Session, student_id: UUID) -> OverallAttendanceResponse:
-        # Fetch all attendance records for the student where the subject is compulsory or mapped
-        records = db.query(Attendance).join(
-            AttendanceSession, Attendance.session_id == AttendanceSession.session_id
-        ).join(
-            Subject, AttendanceSession.subject_id == Subject.subject_id
-        ).outerjoin(
-            StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
-        ).filter(
-            Attendance.student_id == student_id,
-            ((Subject.attendance_required == True) & (Subject.subject_type.in_(["Theory", "Lab", "Activity"]))) |
-            (StudentSubject.mapping_id.isnot(None))
-        ).all()
-
-        conducted = len(records)
-        present = sum(1 for r in records if r.status == "P")
-        absent = sum(1 for r in records if r.status == "A")
-        od = sum(1 for r in records if r.status == "OD")
-
-        # Treating OD exactly like A (absent) while calculating percentage
-        # percentage = (present / conducted) * 100
-        percentage = 100.0
-        if conducted > 0:
-            percentage = round((present / conducted) * 100, 2)
-
-        return OverallAttendanceResponse(
-            conducted_hours=conducted,
-            present_hours=present,
-            absent_hours=absent,
-            od_hours=od,
-            attendance_percentage=percentage
         )
 
     @staticmethod
@@ -183,7 +148,8 @@ class DashboardService:
                 day=day_name,
                 slot_no=slot.slot_no if slot else 0,
                 subject_name=sub.subject_name if sub else "Unknown Subject",
-                status=r.status
+                status=r.status,
+                od_reason=r.od_reason
             ))
         return results
 
@@ -197,7 +163,7 @@ class DashboardService:
             )
 
         # Filter timetable entries based on compulsory or mapped elective subjects
-        entries = db.query(Timetable).join(
+        raw_entries = db.query(Timetable).join(
             Subject, Timetable.subject_id == Subject.subject_id
         ).outerjoin(
             StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
@@ -206,6 +172,25 @@ class DashboardService:
             (Subject.subject_type.in_(["Theory", "Lab", "Activity"])) |
             (StudentSubject.mapping_id.isnot(None))
         ).all()
+
+        mapped_subject_ids = {ms.subject_id for ms in student.student_subjects}
+        
+        # Group entries by (day_of_week, slot_id)
+        from collections import defaultdict
+        entries_by_day_slot = defaultdict(list)
+        for entry in raw_entries:
+            entries_by_day_slot[(entry.day_of_week, entry.slot_id)].append(entry)
+            
+        entries = []
+        for day_slot, slot_entries in entries_by_day_slot.items():
+            if len(slot_entries) > 1:
+                mapped_entries = [e for e in slot_entries if e.subject_id in mapped_subject_ids]
+                if mapped_entries:
+                    entries.extend(mapped_entries)
+                else:
+                    entries.extend(slot_entries)
+            else:
+                entries.extend(slot_entries)
 
         day_timetable = {str(d): [] for d in range(1, 7)}
 
@@ -268,7 +253,7 @@ class DashboardService:
             return []
 
         # Get planned timetable entries (compulsory or mapped elective)
-        entries = db.query(Timetable).join(
+        raw_entries = db.query(Timetable).join(
             Subject, Timetable.subject_id == Subject.subject_id
         ).outerjoin(
             StudentSubject, (StudentSubject.subject_id == Subject.subject_id) & (StudentSubject.student_id == student_id)
@@ -279,33 +264,91 @@ class DashboardService:
             (StudentSubject.mapping_id.isnot(None))
         ).all()
 
-        # Group and sort by slot order
+        mapped_subject_ids = {ms.subject_id for ms in student.student_subjects}
+        
+        # Group entries by slot_id
+        from collections import defaultdict
+        entries_by_slot = defaultdict(list)
+        for entry in raw_entries:
+            entries_by_slot[entry.slot_id].append(entry)
+            
+        entries = []
+        for slot_id, slot_entries in entries_by_slot.items():
+            if len(slot_entries) > 1:
+                mapped_entries = [e for e in slot_entries if e.subject_id in mapped_subject_ids]
+                if mapped_entries:
+                    entries.extend(mapped_entries)
+                else:
+                    entries.extend(slot_entries)
+            else:
+                entries.extend(slot_entries)
+
+        # Bulk preloading to prevent N+1 query overhead over Neon DB network latency
+        slots = db.query(Slot).all()
+        slot_map = {s.slot_id: s for s in slots}
+
+        # Resolve slot and sort
         slots_mapped = []
         for entry in entries:
-            slot = db.query(Slot).filter(Slot.slot_id == entry.slot_id).first()
+            slot = slot_map.get(entry.slot_id)
             if slot:
                 slots_mapped.append((slot, entry))
         slots_mapped.sort(key=lambda x: x[0].slot_no)
 
+        # Bulk query subjects, sessions, attendances, staff
+        subject_ids = {entry.subject_id for entry in entries}
+        subjects = []
+        if subject_ids:
+            subjects = db.query(Subject).filter(Subject.subject_id.in_(list(subject_ids))).all()
+        subject_map = {sub.subject_id: sub for sub in subjects}
+
+        sessions = db.query(AttendanceSession).filter(
+            AttendanceSession.class_id == student.class_id,
+            AttendanceSession.session_date == date_val
+        ).all()
+        
+        sessions_by_slot = defaultdict(list)
+        for s in sessions:
+            sessions_by_slot[s.slot_id].append(s)
+
+        session_ids = [s.session_id for s in sessions]
+        attendances = []
+        if session_ids:
+            attendances = db.query(Attendance).filter(
+                Attendance.session_id.in_(session_ids),
+                Attendance.student_id == student_id
+            ).all()
+        attendance_by_session = {a.session_id: a for a in attendances}
+
+        subject_staff_mappings = []
+        if subject_ids:
+            subject_staff_mappings = db.query(SubjectStaff).filter(
+                SubjectStaff.subject_id.in_(list(subject_ids))
+            ).all()
+        
+        staff_ids = {m.staff_id for m in subject_staff_mappings}
+        if sessions:
+            staff_ids.update({s.staff_id for s in sessions})
+        
+        staff_members = []
+        if staff_ids:
+            staff_members = db.query(Staff).filter(Staff.staff_id.in_(list(staff_ids))).all()
+        staff_map = {st.staff_id: st for st in staff_members}
+
         results = []
         for slot, entry in slots_mapped:
-            # Check if there is an actual attendance session conducted (with parallel/substitution support)
-            sessions = db.query(AttendanceSession).filter(
-                AttendanceSession.class_id == student.class_id,
-                AttendanceSession.session_date == date_val,
-                AttendanceSession.slot_id == slot.slot_id
-            ).all()
-
+            slot_sessions = sessions_by_slot[slot.slot_id]
+            
             session = None
             # 1. First, look for a session matching the planned subject
-            for s in sessions:
+            for s in slot_sessions:
                 if s.subject_id == entry.subject_id:
                     session = s
                     break
 
             # 2. If not found, look for any substitution session the student is eligible for
             if not session:
-                for s in sessions:
+                for s in slot_sessions:
                     sub = db.query(Subject).filter(Subject.subject_id == s.subject_id).first()
                     if sub:
                         if sub.subject_type in ["Theory", "Lab", "Activity"]:
@@ -320,15 +363,9 @@ class DashboardService:
                                 session = s
                                 break
 
-            # Determine actual display subject and faculty:
-            # ONLY use conducted details if attendance has been updated (marked) for this student.
-            # Otherwise, fallback to planned details.
             att = None
             if session:
-                att = db.query(Attendance).filter(
-                    Attendance.session_id == session.session_id,
-                    Attendance.student_id == student_id
-                ).first()
+                att = attendance_by_session.get(session.session_id)
 
             subject_name = ""
             faculty_name = ""
@@ -338,14 +375,26 @@ class DashboardService:
                 # Attendance is updated: show the conducted session's subject and faculty
                 sub = db.query(Subject).filter(Subject.subject_id == session.subject_id).first()
                 subject_name = sub.subject_name if sub else "Unknown Subject"
-
-                staff = db.query(Staff).filter(Staff.staff_id == session.staff_id).first()
+                staff = staff_map.get(session.staff_id)
                 faculty_name = staff.staff_name if staff else "Unknown Faculty"
                 status_val = att.status
             else:
-                # Attendance is not updated yet: let it not show any data
-                subject_name = ""
-                faculty_name = ""
+                # Attendance is not updated yet: show the planned static details
+                sub = subject_map.get(entry.subject_id)
+                subject_name = sub.subject_name if sub else "Unknown Subject"
+
+                # Find planned faculty
+                mappings = [m for m in subject_staff_mappings if m.subject_id == entry.subject_id]
+                incharge_mapping = next((m for m in mappings if m.is_incharge), None)
+                faculty_name = "TBD"
+                if incharge_mapping:
+                    staff = staff_map.get(incharge_mapping.staff_id)
+                    if staff:
+                        faculty_name = staff.staff_name
+                elif mappings:
+                    staff = staff_map.get(mappings[0].staff_id)
+                    if staff:
+                        faculty_name = staff.staff_name
                 status_val = "NOT_MARKED"
 
             results.append(ActualTimetableSlot(

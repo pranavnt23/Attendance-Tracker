@@ -15,7 +15,7 @@ const slotsDefinition = [
   { no: 7, start: "03:50", end: "04:45" }
 ];
 
-const ActualWeeklyTimetable = ({ pivotDate }) => {
+const ActualWeeklyTimetable = ({ pivotDate, showSaturday = false }) => {
   const weekDays = getWeekDays(pivotDate);
 
   // Fetch actual timetable data for each day of the week in parallel
@@ -35,6 +35,8 @@ const ActualWeeklyTimetable = ({ pivotDate }) => {
   if (isLoading) {
     return <Loader message="Loading weekly actual schedule..." size="large" />;
   }
+
+  const renderedWeekDays = showSaturday ? weekDays : weekDays.slice(0, 5);
 
   const getStatusColorClasses = (status) => {
     switch (status) {
@@ -71,7 +73,7 @@ const ActualWeeklyTimetable = ({ pivotDate }) => {
         );
       default:
         return (
-          <span className="text-[9px] font-bold text-slate-400 dark:text-slate-600 block text-center mt-1">
+          <span className="text-[9px] font-bold text-slate-400 dark:text-slate-650 block text-center mt-1">
             Unmarked
           </span>
         );
@@ -101,7 +103,7 @@ const ActualWeeklyTimetable = ({ pivotDate }) => {
             </tr>
           </thead>
           <tbody>
-            {weekDays.map((day, dayIdx) => {
+            {renderedWeekDays.map((day, dayIdx) => {
               const dayName = day.toLocaleDateString('en-US', { weekday: 'long' });
               const dateLabel = day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
               const daySlots = dayQueries[dayIdx].data || [];

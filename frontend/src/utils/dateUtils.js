@@ -60,10 +60,10 @@ export const getWeekDays = (pivotDate = new Date()) => {
 };
 
 // Get start and end dates of a week containing pivotDate
-export const getWeekRangeString = (pivotDate = new Date()) => {
+export const getWeekRangeString = (pivotDate = new Date(), showSaturday = true) => {
   const week = getWeekDays(pivotDate);
   const start = week[0];
-  const end = week[5]; // Saturday
+  const end = showSaturday ? week[5] : week[4]; // Saturday or Friday
   return `${formatShortDate(start)} - ${formatShortDate(end)}`;
 };
 

@@ -167,7 +167,7 @@ const SessionDetails = () => {
             subtext="Unexcused absences"
           />
           <StatCard 
-            title="Official Duty (OD)"
+            title="On Duty (OD)"
             value={`${od} Pupils`}
             color="amber"
             icon={Calendar}

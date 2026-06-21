@@ -222,7 +222,7 @@ const MarkAttendance = () => {
     // Check if any student marked as OD is missing a reason
     const missingODReason = students.some(s => s.status === 'OD' && (!s.od_reason || s.od_reason.trim() === ''));
     if (missingODReason) {
-      setErrorMessage('Please provide an Official Duty (OD) reason for all students marked as OD.');
+      setErrorMessage('Please provide an On Duty (OD) reason for all students marked as OD.');
       setSubmitting(false);
       return;
     }
@@ -272,7 +272,7 @@ const MarkAttendance = () => {
           description={
             step === 1 
               ? "Initialize an attendance session by selecting the date, slot, subject conducted, and faculty."
-              : "Mark each student as Present, Absent, or on Official Duty (OD) for the class session."
+              : "Mark each student as Present, Absent, or on On Duty (OD) for the class session."
           }
         />
       </div>

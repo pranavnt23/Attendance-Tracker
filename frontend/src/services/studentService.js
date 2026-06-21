@@ -6,8 +6,13 @@ const studentService = {
     return response.data;
   },
 
-  getOverallAttendance: async () => {
-    const response = await apiClient.get('/api/student/attendance/overall');
+  getRepStudentSubjectWise: async (studentId) => {
+    const response = await apiClient.get(`/api/rep/students/${studentId}/attendance/subject-wise`);
+    return response.data;
+  },
+
+  getRepStudentHistory: async (studentId) => {
+    const response = await apiClient.get(`/api/rep/students/${studentId}/attendance/history`);
     return response.data;
   },
 

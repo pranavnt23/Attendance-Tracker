@@ -64,7 +64,7 @@ const Login = () => {
                 required: 'Register number is required',
                 minLength: { value: 1, message: 'Too short' }
               })}
-              className={`w-full pl-11 pr-4 py-3 bg-slate-100/50 hover:bg-slate-100 focus:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 dark:focus:bg-slate-900 border text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all ${
+              className={`w-full pl-11 pr-4 py-3 bg-slate-100/50 hover:bg-slate-100 focus:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 dark:focus:bg-slate-900 border text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 ${
                 errors.register_no ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
               }`}
               disabled={isAuthenticating}
@@ -97,7 +97,7 @@ const Login = () => {
                 required: 'Password is required',
                 minLength: { value: 4, message: 'Password is too short' }
               })}
-              className={`w-full pl-11 pr-4 py-3 bg-slate-100/50 hover:bg-slate-100 focus:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 dark:focus:bg-slate-900 border text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all ${
+              className={`w-full pl-11 pr-4 py-3 bg-slate-100/50 hover:bg-slate-100 focus:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 dark:focus:bg-slate-900 border text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 ${
                 errors.password ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
               }`}
               disabled={isAuthenticating}

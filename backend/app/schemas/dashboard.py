@@ -19,14 +19,6 @@ class StudentProfileResponse(BaseModel):
         from_attributes = True
 
 
-class OverallAttendanceResponse(BaseModel):
-    conducted_hours: int
-    present_hours: int
-    absent_hours: int
-    od_hours: int
-    attendance_percentage: float
-
-
 class SubjectWiseAttendanceResponse(BaseModel):
     subject_id: UUID
     subject_code: str
@@ -44,6 +36,8 @@ class AttendanceHistoryResponse(BaseModel):
     slot_no: int
     subject_name: str
     status: str
+    od_reason: Optional[str] = None
+
 
 
 class StaticTimetableSlot(BaseModel):

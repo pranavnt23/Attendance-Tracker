@@ -2,9 +2,10 @@ import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getWeekDays, getWeekRangeString, formatDateString } from '../../utils/dateUtils';
 
-const WeekNavigator = ({ pivotDate, onDateChange }) => {
+const WeekNavigator = ({ pivotDate, onDateChange, showSaturday = true }) => {
   const weekDays = getWeekDays(pivotDate);
   const selectedDateStr = formatDateString(pivotDate);
+  const renderedWeekDays = showSaturday ? weekDays : weekDays.slice(0, 5);
 
   const handlePrevWeek = () => {
     const prev = new Date(pivotDate);
@@ -36,7 +37,7 @@ const WeekNavigator = ({ pivotDate, onDateChange }) => {
         </button>
         
         <span className="font-display font-bold text-sm text-slate-700 dark:text-slate-300">
-          {getWeekRangeString(pivotDate)}
+          {getWeekRangeString(pivotDate, showSaturday)}
         </span>
 
         <button
@@ -49,8 +50,8 @@ const WeekNavigator = ({ pivotDate, onDateChange }) => {
       </div>
 
       {/* Week day strip */}
-      <div className="grid grid-cols-6 gap-2">
-        {weekDays.map((day) => {
+      <div className={`grid ${showSaturday ? 'grid-cols-6' : 'grid-cols-5'} gap-2`}>
+        {renderedWeekDays.map((day) => {
           const dateStr = formatDateString(day);
           const isSelected = dateStr === selectedDateStr;
           const dayNameShort = day.toLocaleDateString('en-US', { weekday: 'short' });
