@@ -4,6 +4,8 @@ from uuid import UUID
 from typing import List
 
 from app.database.db import get_db
+from app.database.models import Student
+from app.dependencies.auth import get_current_user, require_attendance_rep
 from app.schemas.departments import DepartmentCreate, DepartmentUpdate, DepartmentResponse
 from app.services.department_service import DepartmentService
 
@@ -16,11 +18,12 @@ router = APIRouter(
     "/api/departments",
     response_model=DepartmentResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new department"
+    summary="Create a new department (Attendance Rep only)"
 )
 async def create_department(
     department: DepartmentCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return DepartmentService.create(db, department)
 
@@ -32,7 +35,8 @@ async def create_department(
 )
 async def list_departments_by_college(
     college_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return DepartmentService.list_by_college(db, college_id)
 
@@ -40,12 +44,13 @@ async def list_departments_by_college(
 @router.put(
     "/api/departments/{department_id}",
     response_model=DepartmentResponse,
-    summary="Update a department by ID"
+    summary="Update a department by ID (Attendance Rep only)"
 )
 async def update_department(
     department_id: UUID,
     department: DepartmentUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return DepartmentService.update(db, department_id, department)
 
@@ -53,11 +58,12 @@ async def update_department(
 @router.delete(
     "/api/departments/{department_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a department by ID"
+    summary="Delete a department by ID (Attendance Rep only)"
 )
 async def delete_department(
     department_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     DepartmentService.delete(db, department_id)
     return None

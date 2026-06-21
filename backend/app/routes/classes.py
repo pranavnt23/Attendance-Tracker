@@ -4,6 +4,8 @@ from uuid import UUID
 from typing import List
 
 from app.database.db import get_db
+from app.database.models import Student
+from app.dependencies.auth import get_current_user, require_attendance_rep
 from app.schemas.classes import ClassCreate, ClassUpdate, ClassResponse, SemesterPromotion
 from app.services.class_service import ClassService
 
@@ -16,11 +18,12 @@ router = APIRouter(
     "/api/classes",
     response_model=ClassResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new class"
+    summary="Create a new class (Attendance Rep only)"
 )
 async def create_class(
     class_obj: ClassCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return ClassService.create(db, class_obj)
 
@@ -32,7 +35,8 @@ async def create_class(
 )
 async def list_classes_by_batch(
     batch_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return ClassService.list_by_batch(db, batch_id)
 
@@ -44,7 +48,8 @@ async def list_classes_by_batch(
 )
 async def get_class(
     class_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return ClassService.get(db, class_id)
 
@@ -52,12 +57,13 @@ async def get_class(
 @router.put(
     "/api/classes/{class_id}",
     response_model=ClassResponse,
-    summary="Update a class by ID"
+    summary="Update a class by ID (Attendance Rep only)"
 )
 async def update_class(
     class_id: UUID,
     class_obj: ClassUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return ClassService.update(db, class_id, class_obj)
 
@@ -65,12 +71,13 @@ async def update_class(
 @router.patch(
     "/api/classes/{class_id}/semester",
     response_model=ClassResponse,
-    summary="Promote/update class semester"
+    summary="Promote/update class semester (Attendance Rep only)"
 )
 async def promote_class(
     class_id: UUID,
     promo: SemesterPromotion,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return ClassService.promote_semester(db, class_id, promo)
 
@@ -78,11 +85,12 @@ async def promote_class(
 @router.delete(
     "/api/classes/{class_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a class by ID"
+    summary="Delete a class by ID (Attendance Rep only)"
 )
 async def delete_class(
     class_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     ClassService.delete(db, class_id)
     return None

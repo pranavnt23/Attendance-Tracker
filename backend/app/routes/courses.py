@@ -4,6 +4,8 @@ from uuid import UUID
 from typing import List
 
 from app.database.db import get_db
+from app.database.models import Student
+from app.dependencies.auth import get_current_user, require_attendance_rep
 from app.schemas.courses import CourseCreate, CourseUpdate, CourseResponse
 from app.services.course_service import CourseService
 
@@ -16,11 +18,12 @@ router = APIRouter(
     "/api/courses",
     response_model=CourseResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new course"
+    summary="Create a new course (Attendance Rep only)"
 )
 async def create_course(
     course: CourseCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return CourseService.create(db, course)
 
@@ -32,7 +35,8 @@ async def create_course(
 )
 async def list_courses_by_department(
     department_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return CourseService.list_by_department(db, department_id)
 
@@ -40,12 +44,13 @@ async def list_courses_by_department(
 @router.put(
     "/api/courses/{course_id}",
     response_model=CourseResponse,
-    summary="Update a course by ID"
+    summary="Update a course by ID (Attendance Rep only)"
 )
 async def update_course(
     course_id: UUID,
     course: CourseUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return CourseService.update(db, course_id, course)
 
@@ -53,11 +58,12 @@ async def update_course(
 @router.delete(
     "/api/courses/{course_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a course by ID"
+    summary="Delete a course by ID (Attendance Rep only)"
 )
 async def delete_course(
     course_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     CourseService.delete(db, course_id)
     return None

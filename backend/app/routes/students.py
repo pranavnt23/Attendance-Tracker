@@ -4,6 +4,8 @@ from uuid import UUID
 from typing import List
 
 from app.database.db import get_db
+from app.database.models import Student
+from app.dependencies.auth import get_current_user, require_attendance_rep
 from app.schemas.students import (
     StudentCreate,
     StudentUpdate,
@@ -22,11 +24,12 @@ router = APIRouter(
     "/api/students",
     response_model=StudentResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Register a single student"
+    summary="Register a single student (Attendance Rep only)"
 )
 async def create_student(
     student: StudentCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return StudentService.create(db, student)
 
@@ -35,11 +38,12 @@ async def create_student(
     "/api/students/bulk",
     response_model=BulkRegisterResponse,
     status_code=status.HTTP_200_OK,
-    summary="Bulk register multiple students (skips duplicates)"
+    summary="Bulk register multiple students (Attendance Rep only)"
 )
 async def bulk_register_students(
     students: List[StudentCreate],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return StudentService.bulk_register(db, students)
 
@@ -51,7 +55,8 @@ async def bulk_register_students(
 )
 async def list_students_by_class(
     class_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return StudentService.list_by_class(db, class_id)
 
@@ -63,7 +68,8 @@ async def list_students_by_class(
 )
 async def get_student(
     student_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return StudentService.get(db, student_id)
 
@@ -71,12 +77,13 @@ async def get_student(
 @router.put(
     "/api/students/{student_id}",
     response_model=StudentResponse,
-    summary="Update a student by ID"
+    summary="Update a student by ID (Attendance Rep only)"
 )
 async def update_student(
     student_id: UUID,
     student: StudentUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return StudentService.update(db, student_id, student)
 
@@ -84,12 +91,13 @@ async def update_student(
 @router.patch(
     "/api/students/{student_id}/role",
     response_model=StudentResponse,
-    summary="Update a student's role"
+    summary="Update a student's role (Attendance Rep only)"
 )
 async def patch_student_role(
     student_id: UUID,
     role_update: RoleUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return StudentService.patch_role(db, student_id, role_update)
 
@@ -97,11 +105,12 @@ async def patch_student_role(
 @router.delete(
     "/api/students/{student_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a student by ID"
+    summary="Delete a student by ID (Attendance Rep only)"
 )
 async def delete_student(
     student_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     StudentService.delete(db, student_id)
     return None
