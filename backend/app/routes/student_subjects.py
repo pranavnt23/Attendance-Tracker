@@ -4,6 +4,8 @@ from uuid import UUID
 from typing import List
 
 from app.database.db import get_db
+from app.database.models import Student
+from app.dependencies.auth import get_current_user, require_attendance_rep
 from app.schemas.student_subjects import (
     StudentSubjectCreate,
     StudentSubjectResponse,
@@ -27,11 +29,12 @@ router = APIRouter(
     "/api/student-subjects",
     response_model=StudentSubjectResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Add a single student-subject mapping"
+    summary="Add a single student-subject mapping (Attendance Rep only)"
 )
 async def create_mapping(
     mapping: StudentSubjectCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return StudentSubjectService.create(db, mapping)
 
@@ -39,11 +42,12 @@ async def create_mapping(
 @router.delete(
     "/api/student-subjects",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a single student-subject mapping"
+    summary="Delete a single student-subject mapping (Attendance Rep only)"
 )
 async def delete_mapping(
     request: StudentSubjectCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     StudentSubjectService.delete(db, request.student_id, request.subject_id)
     return None
@@ -53,11 +57,12 @@ async def delete_mapping(
     "/api/student-subjects/assign-students",
     response_model=BulkMappingResponse,
     status_code=status.HTTP_200_OK,
-    summary="Assign multiple students to one elective subject"
+    summary="Assign multiple students to one elective subject (Attendance Rep only)"
 )
 async def assign_students(
     request: AssignStudentsToSubjectRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     count = StudentSubjectService.assign_students(db, request)
     return BulkMappingResponse(success=True, created_count=count)
@@ -67,11 +72,12 @@ async def assign_students(
     "/api/student-subjects/assign-subjects",
     response_model=BulkMappingResponse,
     status_code=status.HTTP_200_OK,
-    summary="Assign multiple elective subjects to one student"
+    summary="Assign multiple elective subjects to one student (Attendance Rep only)"
 )
 async def assign_subjects(
     request: AssignSubjectsToStudentRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     count = StudentSubjectService.assign_subjects(db, request)
     return BulkMappingResponse(success=True, created_count=count)
@@ -81,12 +87,13 @@ async def assign_subjects(
     "/api/student-subjects/student/{student_id}",
     response_model=BulkMappingResponse,
     status_code=status.HTTP_200_OK,
-    summary="Replace elective subjects for a student"
+    summary="Replace elective subjects for a student (Attendance Rep only)"
 )
 async def replace_student_subjects(
     student_id: UUID,
     request: ReplaceStudentSubjectsRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     count = StudentSubjectService.replace_student_subjects(db, student_id, request.subject_ids)
     return BulkMappingResponse(success=True, created_count=count)
@@ -96,12 +103,13 @@ async def replace_student_subjects(
     "/api/student-subjects/subject/{subject_id}",
     response_model=BulkMappingResponse,
     status_code=status.HTTP_200_OK,
-    summary="Replace students assigned to an elective subject"
+    summary="Replace students assigned to an elective subject (Attendance Rep only)"
 )
 async def replace_subject_students(
     subject_id: UUID,
     request: ReplaceSubjectStudentsRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     count = StudentSubjectService.replace_subject_students(db, subject_id, request.student_ids)
     return BulkMappingResponse(success=True, created_count=count)
@@ -115,7 +123,8 @@ async def replace_subject_students(
 )
 async def get_students_of_subject(
     subject_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return StudentSubjectService.get_students_of_subject(db, subject_id)
 
@@ -128,7 +137,8 @@ async def get_students_of_subject(
 )
 async def get_subjects_of_student(
     student_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return StudentSubjectService.get_subjects_of_student(db, student_id)
 
@@ -141,6 +151,7 @@ async def get_subjects_of_student(
 )
 async def get_all_elective_mappings_of_class(
     class_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return StudentSubjectService.get_all_elective_mappings_of_class(db, class_id)

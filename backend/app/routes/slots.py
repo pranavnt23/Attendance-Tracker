@@ -4,6 +4,8 @@ from uuid import UUID
 from typing import List
 
 from app.database.db import get_db
+from app.database.models import Student
+from app.dependencies.auth import get_current_user, require_attendance_rep
 from app.schemas.slots import SlotCreate, SlotUpdate, SlotResponse
 from app.services.slot_service import SlotService
 
@@ -16,11 +18,12 @@ router = APIRouter(
     "/api/slots",
     response_model=SlotResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new slot"
+    summary="Create a new slot (Attendance Rep only)"
 )
 async def create_slot(
     slot: SlotCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return SlotService.create(db, slot)
 
@@ -31,7 +34,8 @@ async def create_slot(
     summary="Get all slots"
 )
 async def list_slots(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return SlotService.list(db)
 
@@ -43,7 +47,8 @@ async def list_slots(
 )
 async def get_slot(
     slot_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
 ):
     return SlotService.get(db, slot_id)
 
@@ -51,12 +56,13 @@ async def get_slot(
 @router.put(
     "/api/slots/{slot_id}",
     response_model=SlotResponse,
-    summary="Update a slot by ID"
+    summary="Update a slot by ID (Attendance Rep only)"
 )
 async def update_slot(
     slot_id: UUID,
     slot: SlotUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     return SlotService.update(db, slot_id, slot)
 
@@ -64,11 +70,12 @@ async def update_slot(
 @router.delete(
     "/api/slots/{slot_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a slot by ID"
+    summary="Delete a slot by ID (Attendance Rep only)"
 )
 async def delete_slot(
     slot_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
 ):
     SlotService.delete(db, slot_id)
     return None
