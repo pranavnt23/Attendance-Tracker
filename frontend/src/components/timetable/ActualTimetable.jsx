@@ -41,39 +41,31 @@ const ActualTimetable = ({ slots = [] }) => {
               </div>
 
               <div>
-                {isMarked ? (
-                  <>
-                    <h4 className="text-md font-display font-bold text-slate-900 dark:text-white">
-                      {slot.subject_name}
-                    </h4>
-                    
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        {slot.start_time?.substring(0, 5)} - {slot.end_time?.substring(0, 5)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <User className="w-3.5 h-3.5 text-slate-400" />
-                        {slot.faculty}
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h4 className="text-md font-display font-bold text-slate-400 dark:text-slate-650 italic">
-                      Attendance Pending
-                    </h4>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-slate-400 dark:text-slate-600 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400 opacity-60" />
-                        {slot.start_time?.substring(0, 5)} - {slot.end_time?.substring(0, 5)}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-400/80">
-                        Details hidden until updated
-                      </span>
-                    </div>
-                  </>
-                )}
+                <h4 className={`text-md font-display font-bold ${
+                  isMarked 
+                    ? 'text-slate-900 dark:text-white' 
+                    : 'text-slate-600 dark:text-slate-400'
+                }`}>
+                  {slot.subject_name || 'No Subject Assigned'}
+                </h4>
+                
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    {slot.start_time?.substring(0, 5)} - {slot.end_time?.substring(0, 5)}
+                  </span>
+                  {slot.faculty && (
+                    <span className="flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-slate-400" />
+                      {slot.faculty}
+                    </span>
+                  )}
+                  {!isMarked && (
+                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-slate-100 dark:bg-slate-800/40 px-1.5 py-0.5 rounded">
+                      Planned
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -82,7 +74,7 @@ const ActualTimetable = ({ slots = [] }) => {
               {isMarked ? (
                 <StatusBadge status={slot.attendance_status} />
               ) : (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-slate-100/50 text-slate-400 border-slate-200/60 dark:bg-slate-850 dark:text-slate-500 dark:border-slate-800">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-800 text-white dark:bg-slate-800 dark:text-white border border-slate-700 dark:border-slate-700 shadow-sm">
                   Unmarked
                 </span>
               )}

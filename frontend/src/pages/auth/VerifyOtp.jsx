@@ -96,7 +96,7 @@ const VerifyOtp = () => {
                 minLength: { value: 6, message: 'OTP must be 6 digits' },
                 maxLength: { value: 6, message: 'OTP must be 6 digits' }
               })}
-              className={`w-full pl-11 pr-4 py-3 text-center tracking-widest font-mono font-bold bg-slate-100/50 hover:bg-slate-100 focus:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 dark:focus:bg-slate-900 border text-md rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all ${
+              className={`w-full pl-11 pr-4 py-3 text-center tracking-widest font-mono font-bold bg-slate-100/50 hover:bg-slate-100 focus:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 dark:focus:bg-slate-900 border text-md rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 ${
                 errors.otp ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
               }`}
               disabled={isLoading}

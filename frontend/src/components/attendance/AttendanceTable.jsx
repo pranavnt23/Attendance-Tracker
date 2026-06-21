@@ -11,7 +11,7 @@ const AttendanceTable = ({
 
   const handleStatusChange = (studentId, newStatus) => {
     const student = students.find(s => s.student_id === studentId);
-    onChange?.(studentId, newStatus, newStatus === 'OD' ? (student?.od_reason || 'Official Duty') : null);
+    onChange?.(studentId, newStatus, newStatus === 'OD' ? (student?.od_reason || 'On Duty') : null);
   };
 
   const handleReasonChange = (studentId, reason) => {
@@ -47,8 +47,8 @@ const AttendanceTable = ({
         </div>
       )}
 
-      {/* Roster Table */}
-      <div className="overflow-x-auto">
+      {/* Desktop Table View - Hidden on Mobile */}
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/20">
@@ -142,7 +142,7 @@ const AttendanceTable = ({
                             placeholder="OD Reason (required)"
                             value={student.od_reason || ''}
                             onChange={(e) => handleReasonChange(student.student_id, e.target.value)}
-                            className="px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-amber-500 dark:focus:border-amber-500"
+                            className="px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-amber-500 dark:focus:border-amber-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
                             required
                           />
                         )}
@@ -154,6 +154,101 @@ const AttendanceTable = ({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile List View - No Horizontal Scroll */}
+      <div className="lg:hidden divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+        {students.length === 0 ? (
+          <div className="py-8 px-6 text-center text-slate-400 text-sm font-medium">
+            No student records loaded.
+          </div>
+        ) : (
+          students.map((student) => (
+            <div key={student.student_id} className="p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase mb-0.5">
+                    {student.register_no}
+                  </p>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                    {student.student_name}
+                  </h4>
+                </div>
+
+                <div className="shrink-0">
+                  {mode === 'view' ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <StatusBadge status={student.status} />
+                    </div>
+                  ) : (
+                    <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100/50 dark:bg-slate-800/40 w-36">
+                      {/* Present Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(student.student_id, 'P')}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all border-0 cursor-pointer ${
+                          student.status === 'P'
+                            ? 'bg-emerald-500 text-white shadow-sm'
+                            : 'text-slate-505 hover:text-slate-800 dark:text-slate-400'
+                        }`}
+                      >
+                        P
+                      </button>
+                      
+                      {/* Absent Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(student.student_id, 'A')}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all border-0 cursor-pointer ${
+                          student.status === 'A'
+                            ? 'bg-rose-500 text-white shadow-sm'
+                            : 'text-slate-550 hover:text-slate-800 dark:text-slate-400'
+                        }`}
+                      >
+                        A
+                      </button>
+
+                      {/* OD Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(student.student_id, 'OD')}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all border-0 cursor-pointer ${
+                          student.status === 'OD'
+                            ? 'bg-amber-500 text-white shadow-sm'
+                            : 'text-slate-550 hover:text-slate-800 dark:text-slate-400'
+                        }`}
+                      >
+                        OD
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* OD Reason text field or static status subtext */}
+              {student.status === 'OD' && (
+                <div className="mt-1">
+                  {mode === 'view' ? (
+                    student.od_reason && (
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-500/5 px-2.5 py-1 rounded-lg border border-amber-500/10">
+                        Reason: {student.od_reason}
+                      </span>
+                    )
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="OD Reason (required)"
+                      value={student.od_reason || ''}
+                      onChange={(e) => handleReasonChange(student.student_id, e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-amber-500 dark:focus:border-amber-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
+                      required
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
     </div>

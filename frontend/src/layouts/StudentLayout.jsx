@@ -20,9 +20,9 @@ const StudentLayout = () => {
 
   const navigationItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Attendance', path: '/attendance', icon: CalendarDays },
+    { name: 'Subjectwise', path: '/attendance', icon: CalendarDays },
     { name: 'Timetable', path: '/timetable', icon: Calendar },
-    { name: 'History', path: '/history', icon: History },
+    { name: 'Calendar', path: '/calendar', icon: History },
     { name: 'Profile', path: '/profile', icon: User },
   ];
 

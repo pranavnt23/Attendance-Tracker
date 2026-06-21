@@ -6,12 +6,6 @@ import timetableService from '../services/timetableService';
 export const useAttendance = (options = {}) => {
   const queryClient = useQueryClient();
 
-  // Overall attendance query
-  const useOverallStats = (enabled = true) => useQuery({
-    queryKey: ['attendance', 'overall'],
-    queryFn: studentService.getOverallAttendance,
-    enabled,
-  });
 
   // Subject-wise attendance query
   const useSubjectWiseStats = (enabled = true) => useQuery({
@@ -69,7 +63,6 @@ export const useAttendance = (options = {}) => {
   });
 
   return {
-    useOverallStats,
     useSubjectWiseStats,
     useHistory,
     useActualTimetable,

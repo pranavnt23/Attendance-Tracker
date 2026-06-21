@@ -14,6 +14,8 @@ from app.schemas.students import (
     BulkRegisterResponse
 )
 from app.services.student_service import StudentService
+from app.services.dashboard_service import DashboardService
+from app.schemas.dashboard import SubjectWiseAttendanceResponse, AttendanceHistoryResponse
 
 router = APIRouter(
     tags=["Students"]
@@ -114,3 +116,29 @@ async def delete_student(
 ):
     StudentService.delete(db, student_id)
     return None
+
+
+@router.get(
+    "/api/rep/students/{student_id}/attendance/subject-wise",
+    response_model=List[SubjectWiseAttendanceResponse],
+    summary="Get a student's subject-wise attendance (Attendance Rep only)"
+)
+async def get_rep_student_subject_wise(
+    student_id: UUID,
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
+):
+    return DashboardService.get_subject_wise_attendance(db, student_id)
+
+
+@router.get(
+    "/api/rep/students/{student_id}/attendance/history",
+    response_model=List[AttendanceHistoryResponse],
+    summary="Get a student's attendance history logs (Attendance Rep only)"
+)
+async def get_rep_student_history(
+    student_id: UUID,
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
+):
+    return DashboardService.get_attendance_history(db, student_id)

@@ -23,6 +23,7 @@ import StudentSubjectDetails from '../pages/student/SubjectDetails';
 import StudentTimetable from '../pages/student/Timetable';
 import StudentAttendanceHistory from '../pages/student/AttendanceHistory';
 import StudentProfile from '../pages/student/Profile';
+import StudentDrillDown from '../pages/student/DrillDown';
 
 // Representative Pages
 import RepDashboard from '../pages/rep/Dashboard';
@@ -66,8 +67,9 @@ const AppRoutes = () => {
           <Route path="/attendance" element={<StudentAttendance />} />
           <Route path="/subjects/:subjectId" element={<StudentSubjectDetails />} />
           <Route path="/timetable" element={<StudentTimetable />} />
-          <Route path="/history" element={<StudentAttendanceHistory />} />
+          <Route path="/calendar" element={<StudentAttendanceHistory />} />
           <Route path="/profile" element={<StudentProfile />} />
+          <Route path="/drill-down/:status" element={<StudentDrillDown />} />
         </Route>
 
         {/* Representative Routes */}

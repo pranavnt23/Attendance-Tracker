@@ -9,7 +9,6 @@ from app.database.models import Student
 from app.dependencies.auth import get_current_user
 from app.schemas.dashboard import (
     StudentProfileResponse,
-    OverallAttendanceResponse,
     SubjectWiseAttendanceResponse,
     AttendanceHistoryResponse,
     StaticTimetableResponse,
@@ -35,17 +34,6 @@ async def get_profile(
 ):
     return DashboardService.get_profile(db, current_user.student_id)
 
-
-@router.get(
-    "/attendance/overall",
-    response_model=OverallAttendanceResponse,
-    summary="Get overall student attendance calculations"
-)
-async def get_overall_attendance(
-    db: Session = Depends(get_db),
-    current_user: Student = Depends(get_current_user)
-):
-    return DashboardService.get_overall_attendance(db, current_user.student_id)
 
 
 @router.get(

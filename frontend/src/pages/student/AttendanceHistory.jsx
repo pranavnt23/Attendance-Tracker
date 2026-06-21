@@ -36,8 +36,8 @@ const AttendanceHistory = () => {
   return (
     <div className="space-y-6">
       <PageHeader 
-        title="Attendance History"
-        description="Browse your monthly calendar logs to review Present, Absent, and Official Duty (OD) sessions."
+        title="Attendance Calendar"
+        description="Browse your monthly calendar logs to review Present, Absent, and On Duty (OD) sessions."
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -122,7 +122,7 @@ const AttendanceHistory = () => {
             <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-start gap-2 text-[10px] text-slate-500 dark:text-slate-400">
               <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <span>
-                <strong>Note:</strong> Official Duty (OD) is verified by staff but counts as absent for total percentage computations.
+                <strong>Note:</strong> On Duty (OD) is verified by staff but counts as absent for total percentage computations.
               </span>
             </div>
 

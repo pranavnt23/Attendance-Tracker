@@ -39,8 +39,8 @@ class SessionStudentResponse(BaseModel):
 
 
 class ODStudent(BaseModel):
-    student_id: UUID = Field(..., description="ID of the student on Official Duty")
-    od_reason: str = Field(..., min_length=1, description="Reason for Official Duty")
+    student_id: UUID = Field(..., description="ID of the student on On Duty")
+    od_reason: str = Field(..., min_length=1, description="Reason for On Duty")
 
 
 class AttendanceMarkRequest(BaseModel):
