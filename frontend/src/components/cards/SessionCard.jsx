@@ -11,7 +11,7 @@ const SessionCard = ({ session }) => {
 
   const handleDelete = async () => {
     if (window.confirm(`Are you sure you want to remove the session for ${subject_name}?`)) {
-      await attendanceService.deleteSessionFromCache(session_id);
+      await attendanceService.deleteSession(session_id);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
     }
   };

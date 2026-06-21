@@ -14,7 +14,8 @@ from app.schemas.attendance import (
     SessionAttendanceViewResponse,
     AttendanceRecordUpdate,
     SubjectSubstitutionRequest,
-    SessionDetailsResponse
+    SessionDetailsResponse,
+    SessionLogResponse
 )
 from app.services.attendance_service import AttendanceService
 
@@ -118,3 +119,29 @@ async def get_session_details(
     current_user: Student = Depends(get_current_user)
 ):
     return AttendanceService.get_session_details(db, session_id)
+
+
+@router.get(
+    "/sessions",
+    response_model=List[SessionLogResponse],
+    summary="List all attendance sessions for the representative's class (Attendance Rep only)"
+)
+async def list_sessions(
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
+):
+    return AttendanceService.list_sessions(db, current_rep.class_id)
+
+
+@router.delete(
+    "/session/{session_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Delete an attendance session (Attendance Rep only)"
+)
+async def delete_session(
+    session_id: UUID,
+    db: Session = Depends(get_db),
+    current_rep: Student = Depends(require_attendance_rep)
+):
+    AttendanceService.delete_session(db, session_id, current_rep.class_id)
+    return {"message": "Session deleted successfully."}

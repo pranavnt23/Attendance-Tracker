@@ -4,7 +4,7 @@ from uuid import UUID
 from datetime import date
 from typing import List, Dict, Any
 
-from app.database.models import AttendanceSession, Attendance, Student, Subject, Slot, Timetable, StudentSubject
+from app.database.models import AttendanceSession, Attendance, Student, Subject, Slot, Timetable, StudentSubject, Staff
 from app.schemas.attendance import (
     AttendanceSessionCreate,
     SessionStudentResponse,
@@ -320,3 +320,77 @@ class AttendanceService:
             conducted_subject=conducted_subject_name,
             remarks=session.remarks
         )
+
+    @staticmethod
+    def list_sessions(db: Session, class_id: UUID) -> List[Dict[str, Any]]:
+        from sqlalchemy import func
+
+        # Subquery to count present students for each session
+        attendance_subquery = db.query(
+            Attendance.session_id,
+            func.count(Attendance.attendance_id).label("present_count")
+        ).filter(
+            Attendance.status == "P"
+        ).group_by(
+            Attendance.session_id
+        ).subquery()
+
+        # Query all sessions for this class with slot, subject, staff details and present count
+        query_results = db.query(
+            AttendanceSession.session_id,
+            AttendanceSession.class_id,
+            AttendanceSession.session_date,
+            AttendanceSession.slot_id,
+            AttendanceSession.subject_id,
+            AttendanceSession.staff_id,
+            AttendanceSession.remarks,
+            AttendanceSession.created_at,
+            Slot.slot_no,
+            Subject.subject_name,
+            Subject.subject_code,
+            Staff.staff_name,
+            func.coalesce(attendance_subquery.c.present_count, 0).label("attendance_count")
+        ).join(
+            Slot, AttendanceSession.slot_id == Slot.slot_id
+        ).join(
+            Subject, AttendanceSession.subject_id == Subject.subject_id
+        ).join(
+            Staff, AttendanceSession.staff_id == Staff.staff_id
+        ).outerjoin(
+            attendance_subquery, AttendanceSession.session_id == attendance_subquery.c.session_id
+        ).filter(
+            AttendanceSession.class_id == class_id
+        ).order_by(
+            AttendanceSession.session_date.desc(),
+            AttendanceSession.created_at.desc()
+        ).all()
+
+        return [
+            {
+                "session_id": r.session_id,
+                "class_id": r.class_id,
+                "session_date": r.session_date,
+                "slot_id": r.slot_id,
+                "slot_no": r.slot_no,
+                "subject_id": r.subject_id,
+                "subject_name": r.subject_name,
+                "subject_code": r.subject_code,
+                "staff_id": r.staff_id,
+                "faculty_name": r.staff_name,
+                "attendance_count": r.attendance_count,
+                "remarks": r.remarks,
+                "created_at": r.created_at
+            }
+            for r in query_results
+        ]
+
+    @staticmethod
+    def delete_session(db: Session, session_id: UUID, class_id: UUID) -> None:
+        session = AttendanceService.get_session(db, session_id)
+        if session.class_id != class_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to delete a session from another class."
+            )
+        db.delete(session)
+        db.commit()

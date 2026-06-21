@@ -83,3 +83,23 @@ class SessionDetailsResponse(BaseModel):
     planned_subject: str
     conducted_subject: str
     remarks: Optional[str] = None
+
+
+class SessionLogResponse(BaseModel):
+    session_id: UUID
+    class_id: UUID
+    session_date: date
+    slot_id: UUID
+    slot_no: int
+    subject_id: UUID
+    subject_name: str
+    subject_code: str
+    staff_id: UUID
+    faculty_name: str
+    attendance_count: int
+    remarks: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+

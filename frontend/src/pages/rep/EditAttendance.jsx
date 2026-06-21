@@ -146,19 +146,6 @@ const EditAttendance = () => {
     }
   };
 
-  // Self-heal cache: if session is not found in DB, clear it from local cache
-  useEffect(() => {
-    if (rosterQuery.isError && sessionId) {
-      try {
-        const localSessions = JSON.parse(localStorage.getItem('cached_sessions') || '[]');
-        const filtered = localSessions.filter(s => s.session_id !== sessionId);
-        localStorage.setItem('cached_sessions', JSON.stringify(filtered));
-      } catch (e) {
-        console.error("Error clearing stale session from cache:", e);
-      }
-    }
-  }, [rosterQuery.isError, sessionId]);
-
   if (rosterQuery.isError || (!isLoading && !rosterQuery.data)) {
     return (
       <div className="glass-panel border rounded-3xl p-8 text-center space-y-4 max-w-xl mx-auto mt-12 animate-fade-in">
