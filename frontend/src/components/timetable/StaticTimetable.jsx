@@ -60,15 +60,21 @@ const getSlotTimeRange = (slotNo, colSpan = 1) => {
 };
 
 const getTimetableData = (isMappedToAI, isMappedToPA) => {
-  // Determine Monday & Friday Slot 6 & 7 Lab Item (AI Lab or PA Lab or Free Hour)
-  let monFriSlot6 = { slot_no: 6, subject_code: "", subject_name: "Free Hour", faculty_name: "", colSpan: 2 };
+  // Determine Monday & Friday Slot 6 & 7 Lab Item (AI Lab or PA Lab or Elective)
+  let monFriSlot6 = { 
+    slot_no: 6, 
+    subject_code: "20MSSL06 / 22MDCEL11", 
+    subject_name: "Predictive Analytics / AI Systems Lab (Elective)", 
+    faculty_name: "Dr. T.N. Sugumar / Dr. V. Savithri", 
+    colSpan: 2 
+  };
   
   if (isMappedToAI) {
     monFriSlot6 = { 
       slot_no: 6, 
       subject_code: "22MDCEL11", 
       subject_name: "AI Systems Engineering for Agentic Workflows Laboratory", 
-      faculty_name: "TBD", 
+      faculty_name: "Dr. V. Savithri (i/c), Dr. A. G. Aruna", 
       colSpan: 2 
     };
   } else if (isMappedToPA) {
@@ -84,45 +90,46 @@ const getTimetableData = (isMappedToAI, isMappedToPA) => {
   return {
     // Monday
     "1": [
-      { slot_no: 1, subject_code: "20MSS92", subject_name: "Information Security", faculty_name: "Dr. D. Anandhi" },
-      { slot_no: 2, subject_code: "20MSS91", subject_name: "Agile Methods for Software Development", faculty_name: "Mrs. V. Shanthi" },
+      { slot_no: 1, subject_code: "20MSSE18", subject_name: "Software User Interface Design", faculty_name: "Dr. A.D. Chitra" },
+      { slot_no: 2, subject_code: "20MSS93", subject_name: "Professional Ethics", faculty_name: "Dr. S. Manjula Gandhi" },
       { slot_no: 3, subject_code: "20MSSL10", subject_name: "Business Intelligence Laboratory", faculty_name: "Dr. J. Shana (i/c), Mrs. V. Shanthi, Dr. M. Umarani" },
       { slot_no: 4, subject_code: "20MSSL10", subject_name: "Business Intelligence Laboratory", faculty_name: "Dr. J. Shana (i/c), Mrs. V. Shanthi, Dr. M. Umarani" },
-      { slot_no: 5, subject_code: "20MSSE15", subject_name: "Business Intelligence", faculty_name: "Dr. M. Umarani" },
+      { slot_no: 5, subject_code: "", subject_name: "Library", faculty_name: "" },
       monFriSlot6,
     ],
     // Tuesday
     "2": [
       { slot_no: 1, subject_code: "20MSS93", subject_name: "Professional Ethics", faculty_name: "Dr. S. Manjula Gandhi" },
-      { slot_no: 2, subject_code: "20MSSE18", subject_name: "Software User Interface Design", faculty_name: "Dr. A.D. Chitra" },
+      { slot_no: 2, subject_code: "20MSS91", subject_name: "Agile Methods for Software Development", faculty_name: "Mrs. V. Shanthi" },
       { slot_no: 3, subject_code: "20MSSL10", subject_name: "Business Intelligence Laboratory", faculty_name: "Dr. J. Shana (i/c), Mrs. V. Shanthi, Dr. M. Umarani" },
       { slot_no: 4, subject_code: "20MSSL10", subject_name: "Business Intelligence Laboratory", faculty_name: "Dr. J. Shana (i/c), Mrs. V. Shanthi, Dr. M. Umarani" },
-      { slot_no: 5, subject_code: "20MSS91", subject_name: "Agile Methods for Software Development", faculty_name: "Mrs. V. Shanthi" },
+      { slot_no: 5, subject_code: "20MSSE15", subject_name: "Business Intelligence", faculty_name: "Dr. M. Umarani" },
       { slot_no: 6, subject_code: "", subject_name: "Assoc / Placement Training / CGC", faculty_name: "", colSpan: 2 },
     ],
     // Wednesday
     "3": [
       { slot_no: 1, subject_code: "20MSS94", subject_name: "Information Security Laboratory", faculty_name: "Dr. S. Manjula Gandhi (i/c), Dr. A.D. Chitra, Dr. D. Anandhi", colSpan: 2 },
-      { slot_no: 3, subject_code: "20MSSE15", subject_name: "Business Intelligence", faculty_name: "Dr. M. Umarani" },
-      { slot_no: 4, subject_code: "20MSS91", subject_name: "Agile Methods for Software Development", faculty_name: "Mrs. V. Shanthi" },
-      { slot_no: 5, subject_code: "20MSS93", subject_name: "Professional Ethics", faculty_name: "Dr. S. Manjula Gandhi" },
-      { slot_no: 6, subject_code: "", subject_name: "Wellness", faculty_name: "" },
-      { slot_no: 7, subject_code: "", subject_name: "TVM / CCM", faculty_name: "" },
+      { slot_no: 3, subject_code: "20MSS91", subject_name: "Agile Methods for Software Development", faculty_name: "Mrs. V. Shanthi" },
+      { slot_no: 4, subject_code: "20MSSE15", subject_name: "Business Intelligence", faculty_name: "Dr. M. Umarani" },
+      { slot_no: 5, subject_code: "20MSS92", subject_name: "Information Security", faculty_name: "Dr. D. Anandhi" },
+      { slot_no: 6, subject_code: "WELLNESS", subject_name: "Wellness", faculty_name: "Mrs. Mahalakshmi Rajagopal" },
+      { slot_no: 7, subject_code: "TWM", subject_name: "TWM / CCM", faculty_name: "" },
     ],
     // Thursday
     "4": [
-      { slot_no: 1, subject_code: "20MSSE15", subject_name: "Business Intelligence", faculty_name: "Dr. M. Umarani" },
-      { slot_no: 2, subject_code: "20MSS92", subject_name: "Information Security", faculty_name: "Dr. D. Anandhi" },
-      { slot_no: 3, subject_code: "", subject_name: "Free Hour", faculty_name: "", colSpan: 2 },
+      { slot_no: 1, subject_code: "20MSS94", subject_name: "Information Security Laboratory", faculty_name: "Dr. S. Manjula Gandhi (i/c), Dr. A.D. Chitra, Dr. D. Anandhi", colSpan: 2 },
+      { slot_no: 3, subject_code: "20MSSE15", subject_name: "Business Intelligence", faculty_name: "Dr. M. Umarani" },
+      { slot_no: 4, subject_code: "20MSS92", subject_name: "Information Security", faculty_name: "Dr. D. Anandhi" },
       { slot_no: 5, subject_code: "20MSSE18", subject_name: "Software User Interface Design", faculty_name: "Dr. A.D. Chitra" },
-      { slot_no: 6, subject_code: "", subject_name: "Free Hour", faculty_name: "", colSpan: 2 },
+      { slot_no: 6, subject_code: "", subject_name: "Assoc / Placement Training / CGC", faculty_name: "", colSpan: 2 },
     ],
     // Friday
     "5": [
-      { slot_no: 1, subject_code: "20MSSE18", subject_name: "Software User Interface Design", faculty_name: "Dr. A.D. Chitra" },
-      { slot_no: 2, subject_code: "20MSS92", subject_name: "Information Security", faculty_name: "Dr. D. Anandhi" },
-      { slot_no: 3, subject_code: "", subject_name: "Free Hour", faculty_name: "", colSpan: 2 },
-      { slot_no: 5, subject_code: "20MSS93", subject_name: "Professional Ethics", faculty_name: "Dr. S. Manjula Gandhi" },
+      { slot_no: 1, subject_code: "20MSS92", subject_name: "Information Security", faculty_name: "Dr. D. Anandhi" },
+      { slot_no: 2, subject_code: "20MSSE18", subject_name: "Software User Interface Design", faculty_name: "Dr. A.D. Chitra" },
+      { slot_no: 3, subject_code: "20MSS91", subject_name: "Agile Methods for Software Development", faculty_name: "Mrs. V. Shanthi" },
+      { slot_no: 4, subject_code: "20MSS93", subject_name: "Professional Ethics", faculty_name: "Dr. S. Manjula Gandhi" },
+      { slot_no: 5, subject_code: "", subject_name: "Library", faculty_name: "" },
       monFriSlot6,
     ]
   };
