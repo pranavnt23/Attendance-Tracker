@@ -13,7 +13,8 @@ from app.schemas.dashboard import (
     AttendanceHistoryResponse,
     StaticTimetableResponse,
     ActualTimetableSlot,
-    SubjectDetailsResponse
+    SubjectDetailsResponse,
+    LastUpdatedResponse
 )
 from app.services.dashboard_service import DashboardService
 
@@ -108,3 +109,16 @@ async def get_subject_details(
     current_user: Student = Depends(get_current_user)
 ):
     return DashboardService.get_subject_details(db, current_user.student_id, subject_id)
+
+
+@router.get(
+    "/attendance/last-updated",
+    response_model=LastUpdatedResponse,
+    summary="Get the date and slot until which attendance is updated for the student's class"
+)
+async def get_last_updated(
+    db: Session = Depends(get_db),
+    current_user: Student = Depends(get_current_user)
+):
+    return DashboardService.get_last_updated_date(db, current_user.student_id)
+

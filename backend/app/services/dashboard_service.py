@@ -15,7 +15,8 @@ from app.schemas.dashboard import (
     StaticTimetableResponse,
     StaticTimetableSlot,
     ActualTimetableSlot,
-    SubjectDetailsResponse
+    SubjectDetailsResponse,
+    LastUpdatedResponse
 )
 
 
@@ -459,3 +460,36 @@ class DashboardService:
             conducted_hours=conducted,
             attendance_percentage=percentage
         )
+
+    @staticmethod
+    def get_last_updated_date(db: Session, student_id: UUID) -> LastUpdatedResponse:
+        student = db.query(Student).filter(Student.student_id == student_id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student not found."
+            )
+
+        # Get the latest marked session joining Slot to sort by date and slot_no descending
+        latest_session = db.query(AttendanceSession).join(
+            Slot, AttendanceSession.slot_id == Slot.slot_id
+        ).filter(
+            AttendanceSession.class_id == student.class_id,
+            AttendanceSession.attendance_records.any()
+        ).order_by(
+            AttendanceSession.session_date.desc(),
+            Slot.slot_no.desc()
+        ).first()
+
+        if latest_session:
+            slot = db.query(Slot).filter(Slot.slot_id == latest_session.slot_id).first()
+            return LastUpdatedResponse(
+                last_updated_date=latest_session.session_date,
+                last_updated_slot=slot.slot_no if slot else None
+            )
+
+        return LastUpdatedResponse(
+            last_updated_date=None,
+            last_updated_slot=None
+        )
+

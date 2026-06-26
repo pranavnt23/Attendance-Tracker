@@ -8,16 +8,23 @@ import { formatDateString, formatReadableDate } from '../../utils/dateUtils';
 import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
 import ActualTimetable from '../../components/timetable/ActualTimetable';
 
+const parseDateString = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 const Dashboard = () => {
   const { user, isAuthenticating } = useAuth();
   const navigate = useNavigate();
-  const { useSubjectWiseStats, useActualTimetable } = useAttendance();
+  const { useSubjectWiseStats, useActualTimetable, useLastUpdatedDate } = useAttendance();
 
   const todayStr = formatDateString(new Date());
   const subjectQuery = useSubjectWiseStats();
   const todayClassesQuery = useActualTimetable(todayStr);
+  const lastUpdatedQuery = useLastUpdatedDate();
 
-  const isLoading = isAuthenticating || subjectQuery.isLoading || todayClassesQuery.isLoading;
+  const isLoading = isAuthenticating || subjectQuery.isLoading || todayClassesQuery.isLoading || lastUpdatedQuery.isLoading;
 
   if (isLoading) {
     return <Loader message="Compiling your attendance records..." size="large" />;
@@ -25,6 +32,7 @@ const Dashboard = () => {
 
   const subjects = subjectQuery.data || [];
   const todayClasses = todayClassesQuery.data || [];
+  const lastUpdatedData = lastUpdatedQuery.data;
 
   // Calculate totals from subject-wise logs to display on the quick logs cards
   const totalPresent = subjects.reduce((sum, s) => sum + (s.present_hours || 0), 0);
@@ -38,6 +46,35 @@ const Dashboard = () => {
         title={user?.student_name ? `Hello, ${user.student_name}` : 'Hello'}
         description={`Here is your attendance tracker overview for today (${formatReadableDate(new Date())}).`}
       />
+
+      {/* Attendance Update Status Sentence */}
+      <div className="text-sm text-slate-600 dark:text-slate-400 -mt-6 bg-indigo-500/5 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/80 px-4 py-3 rounded-2xl flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+          <span>
+            {lastUpdatedData?.last_updated_date ? (
+              <>
+                Attendance is updated until{" "}
+                <strong className="font-bold text-slate-900 dark:text-white">
+                  {formatReadableDate(parseDateString(lastUpdatedData.last_updated_date))}
+                </strong>
+                {lastUpdatedData.last_updated_slot !== null && (
+                  <>
+                    {"   "}(
+                    <strong className="font-bold text-slate-900 dark:text-white">
+                      Slot {lastUpdatedData.last_updated_slot}
+                    </strong>
+                    )
+                  </>
+                )}.
+              </>
+            ) : (
+              <span className="italic text-slate-500">No attendance updates recorded yet.</span>
+            )}
+          </span>
+        </div>
+      </div>
+
 
       {/* Interactive Quick Logs Entry Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

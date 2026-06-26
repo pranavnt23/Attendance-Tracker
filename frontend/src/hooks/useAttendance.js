@@ -35,6 +35,14 @@ export const useAttendance = (options = {}) => {
     enabled,
   });
 
+  // Last updated date query
+  const useLastUpdatedDate = (enabled = true) => useQuery({
+    queryKey: ['attendance', 'last-updated'],
+    queryFn: studentService.getLastUpdatedDate,
+    enabled,
+  });
+
+
   // Mark attendance mutation
   const markAttendanceMutation = useMutation({
     mutationFn: attendanceService.markAttendance,
@@ -67,6 +75,7 @@ export const useAttendance = (options = {}) => {
     useHistory,
     useActualTimetable,
     useStaticTimetable,
+    useLastUpdatedDate,
     markAttendance: markAttendanceMutation.mutateAsync,
     isMarking: markAttendanceMutation.isPending,
     editAttendance: editAttendanceMutation.mutateAsync,

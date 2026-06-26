@@ -131,10 +131,14 @@ const StudentLayout = () => {
             
             <ThemeToggle />
 
-            {/* Profile trigger on mobile */}
-            <div className="w-8 h-8 md:hidden rounded-full bg-indigo-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-semibold flex items-center justify-center font-display text-sm">
+            {/* Profile trigger */}
+            <button
+              onClick={() => navigate('/profile')}
+              className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-semibold flex items-center justify-center font-display text-sm hover:ring-2 hover:ring-indigo-500/50 dark:hover:ring-indigo-400/50 transition-all duration-200"
+              title="View Profile"
+            >
               {user?.student_name ? user.student_name[0].toUpperCase() : 'S'}
-            </div>
+            </button>
           </div>
         </header>
 
