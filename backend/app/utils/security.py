@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+from typing import Optional
 from dotenv import load_dotenv
 
 from jose import jwt
@@ -35,15 +36,15 @@ def verify_password(
 
 def create_access_token(
     data: dict,
-    expires_minutes: int = 1440
+    expires_minutes: Optional[int] = None
 ):
     payload = data.copy()
 
-    expire = datetime.utcnow() + timedelta(
-        minutes=expires_minutes
-    )
-
-    payload.update({"exp": expire})
+    if expires_minutes is not None:
+        expire = datetime.utcnow() + timedelta(
+            minutes=expires_minutes
+        )
+        payload.update({"exp": expire})
 
     return jwt.encode(
         payload,

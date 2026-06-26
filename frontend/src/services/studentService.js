@@ -55,6 +55,11 @@ const studentService = {
     const response = await apiClient.get(`/api/subjects/${subjectId}/staff`);
     return response.data;
   },
+
+  getLastUpdatedDate: async () => {
+    const response = await apiClient.get('/api/student/attendance/last-updated');
+    return response.data;
+  },
 };
 
 export default studentService;

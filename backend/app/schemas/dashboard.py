@@ -73,3 +73,9 @@ class SubjectDetailsResponse(BaseModel):
     od_hours: int
     conducted_hours: int
     attendance_percentage: float
+
+
+class LastUpdatedResponse(BaseModel):
+    last_updated_date: Optional[date] = None
+    last_updated_slot: Optional[int] = None
+
