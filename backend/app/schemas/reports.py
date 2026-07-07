@@ -12,6 +12,7 @@ class StudentAttendanceSummary(BaseModel):
     absent_hours: int
     od_hours: int
     attendance_percentage: float
+    attendance_percentage_od: float
 
 
 class ClassAttendanceReportResponse(BaseModel):

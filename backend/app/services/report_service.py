@@ -49,8 +49,10 @@ class ReportService:
             od = sum(1 for r in records if r.status == "OD")
 
             percentage = 100.0
+            percentage_od = 100.0
             if conducted > 0:
                 percentage = round((present / conducted) * 100, 2)
+                percentage_od = round(((present + od) / conducted) * 100, 2)
 
             students_attendance.append(
                 StudentAttendanceSummary(
@@ -61,7 +63,8 @@ class ReportService:
                     present_hours=present,
                     absent_hours=absent,
                     od_hours=od,
-                    attendance_percentage=percentage
+                    attendance_percentage=percentage,
+                    attendance_percentage_od=percentage_od
                 )
             )
 
@@ -110,8 +113,10 @@ class ReportService:
             od = sum(1 for r in records if r.status == "OD")
 
             percentage = 100.0
+            percentage_od = 100.0
             if conducted > 0:
                 percentage = round((present / conducted) * 100, 2)
+                percentage_od = round(((present + od) / conducted) * 100, 2)
 
             students_attendance.append(
                 StudentAttendanceSummary(
@@ -122,7 +127,8 @@ class ReportService:
                     present_hours=present,
                     absent_hours=absent,
                     od_hours=od,
-                    attendance_percentage=percentage
+                    attendance_percentage=percentage,
+                    attendance_percentage_od=percentage_od
                 )
             )
 
@@ -170,8 +176,10 @@ class ReportService:
             od = sum(1 for r in records if r.status == "OD")
 
             percentage = 100.0
+            percentage_od = 100.0
             if conducted > 0:
                 percentage = round((present / conducted) * 100, 2)
+                percentage_od = round(((present + od) / conducted) * 100, 2)
 
             if percentage < threshold:
                 students_shortage.append(
@@ -183,7 +191,8 @@ class ReportService:
                         present_hours=present,
                         absent_hours=absent,
                         od_hours=od,
-                        attendance_percentage=percentage
+                        attendance_percentage=percentage,
+                        attendance_percentage_od=percentage_od
                     )
                 )
 

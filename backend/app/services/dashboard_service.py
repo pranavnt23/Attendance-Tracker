@@ -93,18 +93,22 @@ class DashboardService:
 
             # Calculate percentage, treating OD as absent (only status "P" counts as present)
             percentage = 100.0
+            percentage_od = 100.0
             if conducted > 0:
                 percentage = round((present / conducted) * 100, 2)
+                percentage_od = round(((present + od) / conducted) * 100, 2)
 
             results.append(SubjectWiseAttendanceResponse(
                 subject_id=sub.subject_id,
                 subject_code=sub.subject_code,
                 subject_name=sub.subject_name,
+                subject_type=sub.subject_type,
                 conducted_hours=conducted,
                 present_hours=present,
                 absent_hours=absent,
                 od_hours=od,
-                attendance_percentage=percentage
+                attendance_percentage=percentage,
+                attendance_percentage_od=percentage_od
             ))
 
         return results
@@ -448,17 +452,21 @@ class DashboardService:
 
         # Treating OD exactly like A (absent) while calculating percentage
         percentage = 100.0
+        percentage_od = 100.0
         if conducted > 0:
             percentage = round((present / conducted) * 100, 2)
+            percentage_od = round(((present + od) / conducted) * 100, 2)
 
         return SubjectDetailsResponse(
             subject_name=sub.subject_name,
             subject_code=sub.subject_code,
+            subject_type=sub.subject_type,
             present_hours=present,
             absent_hours=absent,
             od_hours=od,
             conducted_hours=conducted,
-            attendance_percentage=percentage
+            attendance_percentage=percentage,
+            attendance_percentage_od=percentage_od
         )
 
     @staticmethod

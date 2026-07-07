@@ -193,8 +193,9 @@ const Reports = () => {
               <thead>
                 <tr className="border-b border-slate-105 dark:border-slate-800 bg-slate-50/10 dark:bg-slate-950/5 text-xs font-bold text-slate-455 dark:text-slate-550 uppercase tracking-wider">
                   <th className="py-3.5 px-6 w-1/4">Roll No</th>
-                  <th className="py-3.5 px-6 w-2/5">Student Name</th>
-                  <th className="py-3.5 px-6 text-right w-1/5">Percentage</th>
+                  <th className="py-3.5 px-6 w-1/3">Student Name</th>
+                  <th className="py-3.5 px-6 text-right w-1/6">OD as Present</th>
+                  <th className="py-3.5 px-6 text-right w-1/6">OD as Absent</th>
                   <th className="py-3.5 px-6 text-center w-12" />
                 </tr>
               </thead>
@@ -210,17 +211,29 @@ const Reports = () => {
                     pctStyle = 'text-amber-600 border-amber-250 bg-amber-500/5';
                   }
 
+                  let pctStyleOD = 'text-emerald-600 border-emerald-250 bg-emerald-500/5';
+                  if (student.attendance_percentage_od < 50.0) {
+                    pctStyleOD = 'text-rose-600 border-rose-250 bg-rose-500/5';
+                  } else if (student.attendance_percentage_od < 75.0) {
+                    pctStyleOD = 'text-amber-600 border-amber-250 bg-amber-500/5';
+                  }
+
                   return (
                     <React.Fragment key={student.student_id}>
                       <tr 
                         onClick={() => toggleRow(student.student_id)}
                         className="border-b last:border-0 border-slate-50 dark:border-slate-850 hover:bg-slate-50/40 dark:hover:bg-slate-900/10 transition-colors cursor-pointer"
                       >
-                        <td className="py-4 px-6 font-display font-semibold text-slate-500 dark:text-slate-450">
+                        <td className="py-4 px-6 font-display font-semibold text-slate-500 dark:text-slate-455">
                           {student.register_no}
                         </td>
                         <td className="py-4 px-6 font-semibold text-slate-800 dark:text-slate-200">
                           {student.student_name}
+                        </td>
+                        <td className="py-4 px-6 text-right font-display">
+                          <span className={`text-xs font-extrabold px-2 py-0.5 rounded-lg border ${pctStyleOD}`}>
+                            {student.attendance_percentage_od}%
+                          </span>
                         </td>
                         <td className="py-4 px-6 text-right font-display">
                           <span className={`text-xs font-extrabold px-2 py-0.5 rounded-lg border ${pctStyle}`}>
@@ -235,7 +248,7 @@ const Reports = () => {
                       {/* Expanded Row Detail */}
                       {isExpanded && (
                         <tr className="bg-slate-50/30 dark:bg-slate-950/20">
-                          <td colSpan={4} className="py-4 px-6 border-b border-slate-100 dark:border-slate-800">
+                          <td colSpan={5} className="py-4 px-6 border-b border-slate-100 dark:border-slate-800">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-slide-down">
                               <div className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl text-center">
                                 <span className="text-[10px] text-slate-400 dark:text-slate-550 font-bold uppercase tracking-wider block">Conducted</span>
@@ -277,6 +290,13 @@ const Reports = () => {
                 pctStyle = 'text-amber-600 border-amber-250 bg-amber-500/5';
               }
 
+              let pctStyleOD = 'text-emerald-600 border-emerald-250 bg-emerald-500/5';
+              if (student.attendance_percentage_od < 50.0) {
+                pctStyleOD = 'text-rose-600 border-rose-250 bg-rose-500/5';
+              } else if (student.attendance_percentage_od < 75.0) {
+                pctStyleOD = 'text-amber-600 border-amber-250 bg-amber-500/5';
+              }
+
               return (
                 <div key={student.student_id} className="flex flex-col">
                   {/* Row Trigger */}
@@ -293,10 +313,19 @@ const Reports = () => {
                       </h4>
                     </div>
 
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg border ${pctStyle}`}>
-                        {student.attendance_percentage}%
-                      </span>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="text-[7px] font-bold text-slate-400">OD as Present</span>
+                        <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border ${pctStyleOD}`}>
+                          {student.attendance_percentage_od}%
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="text-[7px] font-bold text-slate-400">OD as Absent</span>
+                        <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border ${pctStyle}`}>
+                          {student.attendance_percentage}%
+                        </span>
+                      </div>
                       <div className="text-slate-400">
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </div>

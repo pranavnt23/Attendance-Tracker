@@ -18,20 +18,12 @@ const AttendanceHistory = () => {
   // Fetch actual timetable slots for the selected date to display individual details
   const selectedDateStr = formatDateString(selectedDate);
   
-  // Reuse studentService or dashboard actual timetable lookup for the specific selected date
-  const selectedDateSlotsQuery = useQuery({
-    queryKey: ['timetable', 'actual', selectedDateStr],
-    queryFn: () => studentService.getAttendanceHistory().then(history => {
-      // Find all records matching selectedDateStr
-      return history.filter(h => h.date === selectedDateStr);
-    }),
-    enabled: !!selectedDateStr
-  });
-
-  const isLoading = historyQuery.isLoading || selectedDateSlotsQuery.isLoading;
+  const isLoading = historyQuery.isLoading || historyQuery.isFetching;
 
   const history = historyQuery.data || [];
-  const selectedSlots = selectedDateSlotsQuery.data || [];
+  const selectedSlots = history
+    .filter(h => h.date === selectedDateStr)
+    .sort((a, b) => a.slot_no - b.slot_no);
 
   return (
     <div className="space-y-6">
