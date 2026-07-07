@@ -4,8 +4,8 @@ A cloud-based full-stack Attendance Management System built using **React**, **F
 
 ## 🚀 Live Deployment
 
-- **Frontend:** https://your-vercel-url.vercel.app
-- **Backend:** https://your-render-url.onrender.com
+- **Frontend:** https://ss2022-attendance-portal.vercel.app
+- **Backend:** https://ssattendancetracker.onrender.com
 
 > Replace the above URLs with your deployed application links.
 
