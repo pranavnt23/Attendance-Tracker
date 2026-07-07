@@ -217,9 +217,15 @@ const StudentLookup = () => {
                   </h3>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   <StatCard 
-                    title="Attendance Percentage"
+                    title="Attendance (OD as Present)"
+                    value={`${directSelectedSubject.attendance_percentage_od}%`}
+                    color={directSelectedSubject.attendance_percentage_od >= 75 ? 'emerald' : 'rose'}
+                    icon={GraduationCap}
+                  />
+                  <StatCard 
+                    title="Attendance (OD as Absent)"
                     value={`${directSelectedSubject.attendance_percentage}%`}
                     color={directSelectedSubject.attendance_percentage >= 75 ? 'emerald' : 'rose'}
                     icon={GraduationCap}
@@ -636,14 +642,27 @@ const StudentLookup = () => {
                             </h5>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className={`text-xs font-extrabold px-2 py-0.5 rounded-lg border ${
-                              sub.attendance_percentage >= 75
-                                ? 'text-emerald-600 border-emerald-250 bg-emerald-500/5'
-                                : 'text-rose-600 border-rose-250 bg-rose-500/5'
-                            }`}>
-                              {sub.attendance_percentage}%
-                            </span>
+                          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2.5 shrink-0">
+                            <div className="flex flex-col items-end gap-0.5">
+                              <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500">OD as Present</span>
+                              <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-lg border ${
+                                sub.attendance_percentage_od >= 75
+                                  ? 'text-emerald-600 border-emerald-250 bg-emerald-500/5'
+                                  : 'text-rose-600 border-rose-250 bg-rose-500/5'
+                              }`}>
+                                {sub.attendance_percentage_od}%
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-end gap-0.5">
+                              <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500">OD as Absent</span>
+                              <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-lg border ${
+                                sub.attendance_percentage >= 75
+                                  ? 'text-emerald-600 border-emerald-250 bg-emerald-500/5'
+                                  : 'text-rose-600 border-rose-250 bg-rose-500/5'
+                              }`}>
+                                {sub.attendance_percentage}%
+                              </span>
+                            </div>
                             <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
                           </div>
                         </button>

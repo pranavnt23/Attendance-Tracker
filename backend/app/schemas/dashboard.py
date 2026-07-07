@@ -23,11 +23,13 @@ class SubjectWiseAttendanceResponse(BaseModel):
     subject_id: UUID
     subject_code: str
     subject_name: str
+    subject_type: str
     conducted_hours: int
     present_hours: int
     absent_hours: int
     od_hours: int
     attendance_percentage: float
+    attendance_percentage_od: float
 
 
 class AttendanceHistoryResponse(BaseModel):
@@ -68,11 +70,13 @@ class ActualTimetableSlot(BaseModel):
 class SubjectDetailsResponse(BaseModel):
     subject_name: str
     subject_code: str
+    subject_type: str
     present_hours: int
     absent_hours: int
     od_hours: int
     conducted_hours: int
     attendance_percentage: float
+    attendance_percentage_od: float
 
 
 class LastUpdatedResponse(BaseModel):

@@ -42,7 +42,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
       {/* Page Header */}
-      <PageHeader 
+      <PageHeader
         title={user?.student_name ? `Hello, ${user.student_name}` : 'Hello'}
         description={`Here is your attendance tracker overview for today (${formatReadableDate(new Date())}).`}
       />
@@ -54,17 +54,9 @@ const Dashboard = () => {
           <span>
             {lastUpdatedData?.last_updated_date ? (
               <>
-                Attendance is updated until{" "}
-                <strong className="font-bold text-slate-900 dark:text-white">
-                  {formatReadableDate(parseDateString(lastUpdatedData.last_updated_date))}
-                </strong>
-                {lastUpdatedData.last_updated_slot !== null && (
+                Attendance is updated until {"  "} <strong className="font-bold text-slate-900 dark:text-white"> {formatReadableDate(parseDateString(lastUpdatedData.last_updated_date))}</strong> {lastUpdatedData.last_updated_slot !== null && (
                   <>
-                    {"   "}(
-                    <strong className="font-bold text-slate-900 dark:text-white">
-                      Slot {lastUpdatedData.last_updated_slot}
-                    </strong>
-                    )
+                    (<strong className="font-bold text-slate-900 dark:text-white">Slot {lastUpdatedData.last_updated_slot}</strong>)
                   </>
                 )}.
               </>
@@ -78,7 +70,7 @@ const Dashboard = () => {
 
       {/* Interactive Quick Logs Entry Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        
+
         {/* Present Logs Card */}
         <button
           onClick={() => navigate('/drill-down/P')}

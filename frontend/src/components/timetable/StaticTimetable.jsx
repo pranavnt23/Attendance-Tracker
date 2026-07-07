@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Clock, User } from 'lucide-react';
 import { useAttendance } from '../../hooks/useAttendance';
+import Loader from '../common/Loader';
 
 const slotsDefinition = [
   { no: 1, start: "09:00", end: "09:55" },
@@ -138,6 +139,11 @@ const getTimetableData = (isMappedToAI, isMappedToPA) => {
 const StaticTimetable = () => {
   const { useSubjectWiseStats } = useAttendance();
   const subjectQuery = useSubjectWiseStats();
+
+  if (subjectQuery.isLoading || subjectQuery.isFetching) {
+    return <Loader message="Resolving elective mappings..." size="large" />;
+  }
+
   const subjects = subjectQuery.data || [];
 
   const isMappedToAI = subjects.some(s => s.subject_code === '22MDCEL11');

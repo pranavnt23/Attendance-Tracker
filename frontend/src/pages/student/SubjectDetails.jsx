@@ -104,9 +104,16 @@ const SubjectDetails = () => {
       </div>
 
       {/* Stats Cards grid (Conducted hours removed, only percentage & P/A/OD counts) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard 
-          title="Attendance Percentage"
+          title="Attendance (OD as Present)"
+          value={`${stats.attendance_percentage_od}%`}
+          color={stats.attendance_percentage_od >= 75 ? 'emerald' : 'rose'}
+          icon={GraduationCap}
+          subtext={stats.attendance_percentage_od >= 75 ? 'Meets threshold' : 'Attendance shortage'}
+        />
+        <StatCard 
+          title="Attendance (OD as Absent)"
           value={`${stats.attendance_percentage}%`}
           color={stats.attendance_percentage >= 75 ? 'emerald' : 'rose'}
           icon={GraduationCap}

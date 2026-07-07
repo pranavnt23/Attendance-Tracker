@@ -22,6 +22,10 @@ const Timetable = () => {
   const satQuery = useActualTimetable(satDateStr, activeTab === 'actual');
   const showSaturday = satQuery.data?.some(slot => slot.subject_name && slot.subject_name.trim() !== "") || false;
 
+  const isTabLoading = activeTab === 'static'
+    ? (staticQuery.isLoading || staticQuery.isFetching)
+    : (satQuery.isLoading || satQuery.isFetching);
+
   const handleDateChange = (date) => {
     setPivotDate(date);
   };
@@ -62,12 +66,10 @@ const Timetable = () => {
       />
 
       {/* Main Grid Panels */}
-      {activeTab === 'static' ? (
-        staticQuery.isLoading ? (
-          <Loader message="Loading weekly timetable grid..." size="large" />
-        ) : (
-          <StaticTimetable timetableData={staticQuery.data} />
-        )
+      {isTabLoading ? (
+        <Loader message={`Loading weekly ${activeTab === 'static' ? 'static' : 'actual'} schedule...`} size="large" />
+      ) : activeTab === 'static' ? (
+        <StaticTimetable timetableData={staticQuery.data} />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
           

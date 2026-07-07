@@ -7,17 +7,25 @@ const SubjectCard = ({ subject }) => {
     subject_id, 
     subject_code, 
     subject_name, 
+    subject_type = 'Theory',
     attendance_percentage = 100,
+    attendance_percentage_od = 100,
     conducted_hours = 0,
     present_hours = 0
   } = subject;
 
-  // Drop logic: Projected % if missed next hour = Present / (Conducted + 1)
+  // Drop logic:
+  // Theory/Activity/Elective Theory: Conducted + 1, Present unchanged
+  // Lab/Elective Lab: Conducted + 2, Present unchanged
+  const isLab = subject_type === 'Lab' || subject_type === 'Elective Lab';
+  const hoursToAdd = isLab ? 2 : 1;
+  const dropLabel = isLab ? 'If absent next lab:' : 'If absent next hour:';
+
   const projected = conducted_hours > 0
-    ? parseFloat(((present_hours / (conducted_hours + 1)) * 100).toFixed(1))
+    ? parseFloat(((present_hours / (conducted_hours + hoursToAdd)) * 100).toFixed(1))
     : 0.0;
 
-  // Determine badge colors based on percentage thresholds
+  // Determine badge colors based on percentage thresholds for the official rule (OD as Absent)
   let percentageColor = 'text-indigo-650 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800';
   let indicatorBar = 'bg-indigo-600 dark:bg-indigo-400';
   
@@ -30,6 +38,16 @@ const SubjectCard = ({ subject }) => {
   } else if (attendance_percentage >= 75) {
     percentageColor = 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-250 dark:border-emerald-800';
     indicatorBar = 'bg-emerald-500';
+  }
+
+  // Determine colors for OD as Present percentage bar
+  let odIndicatorBar = 'bg-indigo-600 dark:bg-indigo-400';
+  if (attendance_percentage_od < 50) {
+    odIndicatorBar = 'bg-rose-500';
+  } else if (attendance_percentage_od < 75) {
+    odIndicatorBar = 'bg-amber-500';
+  } else if (attendance_percentage_od >= 75) {
+    odIndicatorBar = 'bg-emerald-500';
   }
 
   return (
@@ -53,18 +71,41 @@ const SubjectCard = ({ subject }) => {
       </div>
 
       <div className="mt-6 space-y-4">
-        {/* Progress Bar */}
-        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-          <div 
-            className={`h-full rounded-full transition-all duration-500 ${indicatorBar}`}
-            style={{ width: `${Math.min(100, Math.max(0, attendance_percentage))}%` }}
-          />
+        {/* Progress Bars */}
+        <div className="space-y-3">
+          {/* Percentage 1: OD as Present */}
+          <div>
+            <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              <span>Attendance (OD as Present)</span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">{attendance_percentage_od}%</span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-550 ${odIndicatorBar}`}
+                style={{ width: `${Math.min(100, Math.max(0, attendance_percentage_od))}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Percentage 2: OD as Absent */}
+          <div>
+            <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              <span>Attendance (OD as Absent)</span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-300">{attendance_percentage}%</span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${indicatorBar}`}
+                style={{ width: `${Math.min(100, Math.max(0, attendance_percentage))}%` }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Projected Drop & View Details Link */}
         <div className="pt-3 border-t border-slate-50 dark:border-slate-850 flex flex-col gap-2">
           <div className="flex justify-between items-center text-[11px] font-semibold text-slate-455 dark:text-slate-400">
-            <span>If absent next hour:</span>
+            <span>{dropLabel}</span>
             <span className="text-rose-500 font-extrabold">{projected}%</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-indigo-600 dark:text-indigo-400 font-bold pt-1">

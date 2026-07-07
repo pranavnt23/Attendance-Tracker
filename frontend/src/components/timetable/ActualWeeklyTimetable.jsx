@@ -30,7 +30,7 @@ const ActualWeeklyTimetable = ({ pivotDate, showSaturday = false }) => {
     })
   });
 
-  const isLoading = dayQueries.some(q => q.isLoading);
+  const isLoading = dayQueries.some(q => q.isLoading || q.isFetching);
 
   if (isLoading) {
     return <Loader message="Loading weekly actual schedule..." size="large" />;
