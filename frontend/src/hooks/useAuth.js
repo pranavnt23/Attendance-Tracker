@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import authService from '../services/authService';
@@ -16,9 +17,11 @@ export const useAuth = () => {
   });
 
   // Sync profile metadata to store once loaded
-  if (meQuery.data && (!me || !me.student_name)) {
-    setMe(meQuery.data);
-  }
+  useEffect(() => {
+    if (meQuery.data && (!me || !me.student_name)) {
+      setMe(meQuery.data);
+    }
+  }, [meQuery.data, me, setMe]);
 
   // Login mutation
   const loginMutation = useMutation({

@@ -58,3 +58,10 @@ uploads/
 
 # Coverage reports
 coverage/
+
+# Agent Customizations
+.agents/
+
+# Seed / Mock Data Script
+backend/seed.py
+

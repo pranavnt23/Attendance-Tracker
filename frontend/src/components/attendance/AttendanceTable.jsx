@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Search, UserMinus } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
+import { useDialog } from '../../context/DialogContext';
 
 const AttendanceTable = ({ 
   students = [], 
@@ -8,6 +10,9 @@ const AttendanceTable = ({
   onMarkAllPresent,
   onReset
 }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [bulkInput, setBulkInput] = useState('');
+  const { toast } = useDialog();
 
   const handleStatusChange = (studentId, newStatus) => {
     const student = students.find(s => s.student_id === studentId);
@@ -19,8 +24,110 @@ const AttendanceTable = ({
     onChange?.(studentId, student?.status || 'OD', reason);
   };
 
+  const handleApplyBulkAbsentees = () => {
+    if (!bulkInput.trim()) return;
+
+    const tokens = bulkInput
+      .split(/[\s,;\n]+/)
+      .map(t => t.trim().toLowerCase())
+      .filter(t => t.length > 0);
+
+    if (tokens.length === 0) return;
+
+    let matchCount = 0;
+    const absenteesIds = [];
+    const restIds = [];
+
+    students.forEach(student => {
+      const regNoLower = student.register_no.toLowerCase();
+      const isMatched = tokens.some(token => 
+        regNoLower === token || 
+        regNoLower.endsWith(token)
+      );
+
+      if (isMatched) {
+        absenteesIds.push(student.student_id);
+        matchCount++;
+      } else {
+        restIds.push(student.student_id);
+      }
+    });
+
+    if (matchCount === 0) {
+      toast('No students matched the entered Roll/Register numbers. Please check your input.', 'warning');
+      return;
+    }
+
+    // Apply absentees: mark matched as 'A'
+    absenteesIds.forEach(id => {
+      onChange?.(id, 'A', null);
+    });
+
+    // Mark rest as 'P' if they were 'A'
+    restIds.forEach(id => {
+      const student = students.find(s => s.student_id === id);
+      if (student && student.status === 'A') {
+        onChange?.(id, 'P', null);
+      }
+    });
+
+    setBulkInput('');
+    toast(`Successfully marked ${matchCount} student(s) as Absent. All others set as Present.`, 'success');
+  };
+
+  const handleBulkKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleApplyBulkAbsentees();
+    }
+  };
+
+  const filteredStudents = students.filter(student => 
+    student.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.register_no.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="glass-panel border rounded-3xl shadow-sm overflow-hidden animate-fade-in">
+      
+      {/* Search & Bulk entry header block */}
+      <div className="p-4 bg-white dark:bg-slate-900 border-b border-slate-205 dark:border-slate-805 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-450 dark:text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search student name or register number..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 hover:bg-slate-100/50 focus:bg-white dark:bg-slate-800 dark:hover:bg-slate-800/80 dark:focus:bg-slate-850 border border-slate-250 dark:border-slate-750 focus:border-indigo-500 dark:focus:border-indigo-500 rounded-xl focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500"
+          />
+        </div>
+
+        {/* Bulk entry input - show only in mark/edit modes */}
+        {mode !== 'view' && (
+          <div className="flex gap-2 items-center">
+            <div className="relative flex-1">
+              <UserMinus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-455 dark:text-slate-500" />
+              <input
+                type="text"
+                placeholder="Bulk mark absent: e.g. 5, 12, 18, 42"
+                value={bulkInput}
+                onChange={(e) => setBulkInput(e.target.value)}
+                onKeyDown={handleBulkKeyDown}
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 hover:bg-slate-100/50 focus:bg-white dark:bg-slate-800 dark:hover:bg-slate-800/80 dark:focus:bg-slate-850 border border-slate-250 dark:border-slate-750 focus:border-indigo-500 dark:focus:border-indigo-500 rounded-xl focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleApplyBulkAbsentees}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm shrink-0 border-0"
+            >
+              Apply
+            </button>
+          </div>
+        )}
+      </div>
       
       {/* Bulk action headers */}
       {mode !== 'view' && (
@@ -64,14 +171,14 @@ const AttendanceTable = ({
             </tr>
           </thead>
           <tbody>
-            {students.length === 0 ? (
+            {filteredStudents.length === 0 ? (
               <tr>
                 <td colSpan={3} className="py-8 px-6 text-center text-slate-400 text-sm font-medium">
-                  No student records loaded.
+                  {students.length === 0 ? "No student records loaded." : "No student records match your search."}
                 </td>
               </tr>
             ) : (
-              students.map((student) => (
+              filteredStudents.map((student) => (
                 <tr 
                   key={student.student_id} 
                   className="border-b last:border-0 border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/30 dark:hover:bg-slate-900/10 transition-colors"
@@ -158,12 +265,12 @@ const AttendanceTable = ({
 
       {/* Mobile List View - No Horizontal Scroll */}
       <div className="lg:hidden divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
-        {students.length === 0 ? (
+        {filteredStudents.length === 0 ? (
           <div className="py-8 px-6 text-center text-slate-400 text-sm font-medium">
-            No student records loaded.
+            {students.length === 0 ? "No student records loaded." : "No student records match your search."}
           </div>
         ) : (
-          students.map((student) => (
+          filteredStudents.map((student) => (
             <div key={student.student_id} className="p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">

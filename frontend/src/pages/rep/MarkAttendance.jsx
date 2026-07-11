@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../../components/common/PageHeader';
 import Loader from '../../components/common/Loader';
 import AttendanceTable from '../../components/attendance/AttendanceTable';
@@ -14,6 +14,7 @@ import { Calendar, Clock, BookOpen, User, PlusCircle, ArrowLeft, CheckCircle } f
 const MarkAttendance = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Step state
   const [step, setStep] = useState(1); // 1 = Initialize Session, 2 = Mark Students
@@ -148,29 +149,25 @@ const MarkAttendance = () => {
     }
   };
 
-  const handleInitializeSession = async (e) => {
-    e.preventDefault();
-    setErrorMessage('');
-    
-    if (selectedSlotIds.length === 0 || !selectedSubjectId || !selectedStaffId) {
-      setErrorMessage('Please select Date, Slot(s), Subject, and Faculty conducting the session.');
-      return;
-    }
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
+  const [hasAutoInitialized, setHasAutoInitialized] = useState(false);
 
+  const triggerSessionInitialization = async (sessionDate, slotIds, subjectId, staffId) => {
+    setErrorMessage('');
     setIsLoadingSession(true);
     try {
-      const selectedSubject = subjects.find(s => s.subject_id === selectedSubjectId);
-      const selectedStaff = staffList.find(s => s.staff_id === selectedStaffId);
+      const selectedSubject = subjects.find(s => s.subject_id === subjectId);
+      const selectedStaff = staffList.find(s => s.staff_id === staffId);
 
       // Create attendance sessions for all selected slots in parallel
-      const sessionPromises = selectedSlotIds.map(slotId => {
+      const sessionPromises = slotIds.map(slotId => {
         const selectedSlot = slots.find(s => s.slot_id === slotId);
         return attendanceService.createSession({
           class_id: user.class_id,
-          session_date: date,
+          session_date: sessionDate,
           slot_id: slotId,
-          subject_id: selectedSubjectId,
-          staff_id: selectedStaffId,
+          subject_id: subjectId,
+          staff_id: staffId,
           remarks,
           subject_name: selectedSubject?.subject_name,
           faculty_name: selectedStaff?.staff_name,
@@ -196,7 +193,97 @@ const MarkAttendance = () => {
     }
   };
 
-  const [isLoadingSession, setIsLoadingSession] = useState(false);
+  const handleInitializeSession = async (e) => {
+    if (e) e.preventDefault();
+    setErrorMessage('');
+    
+    if (selectedSlotIds.length === 0 || !selectedSubjectId || !selectedStaffId) {
+      setErrorMessage('Please select Date, Slot(s), Subject, and Faculty conducting the session.');
+      return;
+    }
+
+    await triggerSessionInitialization(date, selectedSlotIds, selectedSubjectId, selectedStaffId);
+  };
+
+  // Handle prefilled state from navigation (e.g. from Dashboard)
+  useEffect(() => {
+    if (
+      location.state && 
+      slots.length > 0 && 
+      subjects.length > 0 && 
+      staffList.length > 0 &&
+      !hasAutoInitialized
+    ) {
+      const { initialSlotNo, initialSubjectName, initialFacultyName, date: stateDate, autoInitialize } = location.state;
+      
+      let matchedDate = date;
+      if (stateDate) {
+        setDate(stateDate);
+        matchedDate = stateDate;
+      }
+      
+      let matchedSlotId = null;
+      if (initialSlotNo) {
+        const matchedSlot = slots.find(s => s.slot_no === initialSlotNo);
+        if (matchedSlot) {
+          setSelectedSlotIds([matchedSlot.slot_id]);
+          matchedSlotId = matchedSlot.slot_id;
+        }
+      }
+      
+      let matchedSubjectId = null;
+      if (initialSubjectName) {
+        const matchedSubject = subjects.find(s => 
+          s.subject_name.toLowerCase() === initialSubjectName.toLowerCase() ||
+          s.subject_code.toLowerCase() === initialSubjectName.toLowerCase()
+        );
+        if (matchedSubject) {
+          setSelectedSubjectId(matchedSubject.subject_id);
+          matchedSubjectId = matchedSubject.subject_id;
+        }
+      }
+      
+      const initializeWithStaff = async (subId, staffName) => {
+        let finalStaffId = null;
+        if (staffName) {
+          const matchedStaff = staffList.find(st => 
+            st.staff_name.toLowerCase().includes(staffName.toLowerCase()) ||
+            staffName.toLowerCase().includes(st.staff_name.toLowerCase())
+          );
+          if (matchedStaff) {
+            finalStaffId = matchedStaff.staff_id;
+          }
+        }
+        
+        if (!finalStaffId && subId) {
+          try {
+            const staffAssignments = await studentService.getSubjectStaff(subId);
+            if (staffAssignments && staffAssignments.length > 0) {
+              const inCharge = staffAssignments.find(st => st.is_incharge);
+              finalStaffId = inCharge ? inCharge.staff_id : staffAssignments[0].staff_id;
+            }
+          } catch (err) {
+            console.error("Autofill staff failed: ", err);
+          }
+        }
+        
+        if (finalStaffId) {
+          setSelectedStaffId(finalStaffId);
+        }
+
+        // If autoInitialize is true and we matched everything, trigger initialize
+        if (autoInitialize && matchedDate && matchedSlotId && matchedSubjectId && finalStaffId) {
+          setHasAutoInitialized(true);
+          triggerSessionInitialization(matchedDate, [matchedSlotId], matchedSubjectId, finalStaffId);
+        }
+      };
+
+      initializeWithStaff(matchedSubjectId, initialFacultyName);
+      
+      // Clear location state so it doesn't trigger again on subsequent renders
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, slots, subjects, staffList, hasAutoInitialized]);
 
   const handleStudentStatusChange = (studentId, status, odReason) => {
     setStudents(prev => prev.map(s => {

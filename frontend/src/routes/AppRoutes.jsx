@@ -24,6 +24,7 @@ import StudentTimetable from '../pages/student/Timetable';
 import StudentAttendanceHistory from '../pages/student/AttendanceHistory';
 import StudentProfile from '../pages/student/Profile';
 import StudentDrillDown from '../pages/student/DrillDown';
+import StudentHub from '../pages/student/Hub';
 
 // Representative Pages
 import RepDashboard from '../pages/rep/Dashboard';
@@ -33,6 +34,8 @@ import RepSessionDetails from '../pages/rep/SessionDetails';
 import RepEditAttendance from '../pages/rep/EditAttendance';
 import RepStudentLookup from '../pages/rep/StudentLookup';
 import RepReports from '../pages/rep/Reports';
+import RepHub from '../pages/rep/Hub';
+import RepManageClass from '../pages/rep/ManageClass';
 
 import { ROLES } from '../utils/constants';
 import { useAuthStore } from '../store/authStore';
@@ -70,6 +73,7 @@ const AppRoutes = () => {
           <Route path="/calendar" element={<StudentAttendanceHistory />} />
           <Route path="/profile" element={<StudentProfile />} />
           <Route path="/drill-down/:status" element={<StudentDrillDown />} />
+          <Route path="/modules" element={<StudentHub />} />
         </Route>
 
         {/* Representative Routes */}
@@ -82,6 +86,8 @@ const AppRoutes = () => {
             <Route path="/rep/edit-attendance/:sessionId" element={<RepEditAttendance />} />
             <Route path="/rep/lookup" element={<RepStudentLookup />} />
             <Route path="/rep/reports" element={<RepReports />} />
+            <Route path="/rep/manage" element={<RepManageClass />} />
+            <Route path="/rep/modules" element={<RepHub />} />
           </Route>
         </Route>
 
