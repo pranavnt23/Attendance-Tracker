@@ -33,6 +33,7 @@ import RepSessionDetails from '../pages/rep/SessionDetails';
 import RepEditAttendance from '../pages/rep/EditAttendance';
 import RepStudentLookup from '../pages/rep/StudentLookup';
 import RepReports from '../pages/rep/Reports';
+import RepManageODList from '../pages/rep/ManageODList';
 
 import { ROLES } from '../utils/constants';
 import { useAuthStore } from '../store/authStore';
@@ -82,8 +83,10 @@ const AppRoutes = () => {
             <Route path="/rep/edit-attendance/:sessionId" element={<RepEditAttendance />} />
             <Route path="/rep/lookup" element={<RepStudentLookup />} />
             <Route path="/rep/reports" element={<RepReports />} />
+            <Route path="/rep/od-list" element={<RepManageODList />} />
           </Route>
         </Route>
+
 
       </Route>
 

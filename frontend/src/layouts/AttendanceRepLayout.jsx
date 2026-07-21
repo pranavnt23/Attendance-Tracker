@@ -6,6 +6,7 @@ import {
   ListTodo, 
   Search, 
   BarChart3, 
+  UserCheck,
   GraduationCap,
   LogOut
 } from 'lucide-react';
@@ -20,9 +21,11 @@ const AttendanceRepLayout = () => {
     { name: 'Rep Dashboard', path: '/rep/dashboard', icon: LayoutDashboard },
     { name: 'Mark Attendance', path: '/rep/mark', icon: PlusCircle },
     { name: 'Sessions', path: '/rep/sessions', icon: ListTodo },
+    { name: 'Manage OD List', path: '/rep/od-list', icon: UserCheck },
     { name: 'Student Lookup', path: '/rep/lookup', icon: Search },
     { name: 'Reports', path: '/rep/reports', icon: BarChart3 },
   ];
+
 
   const handleLogout = () => {
     logout();

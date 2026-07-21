@@ -8,7 +8,9 @@ import { useAuth } from '../../hooks/useAuth';
 import timetableService from '../../services/timetableService';
 import studentService from '../../services/studentService';
 import attendanceService from '../../services/attendanceService';
+import odListService from '../../services/odListService';
 import { formatDateString } from '../../utils/dateUtils';
+
 import { Calendar, Clock, BookOpen, User, PlusCircle, ArrowLeft, CheckCircle } from 'lucide-react';
 
 const MarkAttendance = () => {
@@ -214,6 +216,34 @@ const MarkAttendance = () => {
   const handleReset = () => {
     setStudents(prev => prev.map(s => ({ ...s, status: 'P', od_reason: null })));
   };
+
+  const handleApplyODList = async () => {
+    try {
+      const odList = await odListService.getODList();
+      const odStudentIds = new Set(odList.map(item => item.student_id));
+
+      if (odStudentIds.size === 0) {
+        setErrorMessage('No students found in the OD list for your class.');
+        setTimeout(() => setErrorMessage(''), 4000);
+        return;
+      }
+
+      setStudents(prev => prev.map(student => {
+        if (odStudentIds.has(student.student_id)) {
+          return {
+            ...student,
+            status: 'OD',
+            od_reason: student.od_reason || 'On Duty'
+          };
+        }
+        return student;
+      }));
+    } catch (err) {
+      console.error("Failed to fetch OD list:", err);
+      setErrorMessage("Failed to fetch OD list. Please try again.");
+    }
+  };
+
 
   const handleSubmitAttendance = async () => {
     setSubmitting(true);
@@ -455,7 +485,9 @@ const MarkAttendance = () => {
             onChange={handleStudentStatusChange}
             onMarkAllPresent={handleMarkAllPresent}
             onReset={handleReset}
+            onApplyODList={handleApplyODList}
           />
+
 
           <div className="flex gap-4 justify-end pt-4">
             <button

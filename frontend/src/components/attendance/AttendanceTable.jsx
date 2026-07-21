@@ -1,12 +1,14 @@
 import React from 'react';
 import StatusBadge from '../common/StatusBadge';
+import { UserCheck } from 'lucide-react';
 
 const AttendanceTable = ({ 
   students = [], 
   mode = 'view', // 'view' | 'mark' | 'edit'
   onChange, // Callback when status changes (studentId, status, odReason)
   onMarkAllPresent,
-  onReset
+  onReset,
+  onApplyODList
 }) => {
 
   const handleStatusChange = (studentId, newStatus) => {
@@ -28,23 +30,34 @@ const AttendanceTable = ({
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
             Roster: <span className="font-bold text-slate-800 dark:text-slate-200">{students.length}</span> students
           </span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {onApplyODList && (
+              <button
+                type="button"
+                onClick={onApplyODList}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                Apply OD List
+              </button>
+            )}
             <button
               type="button"
               onClick={onMarkAllPresent}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-sm"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-sm cursor-pointer"
             >
               Mark All Present
             </button>
             <button
               type="button"
               onClick={onReset}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
             >
               Reset
             </button>
           </div>
         </div>
+
       )}
 
       {/* Desktop Table View - Hidden on Mobile */}
