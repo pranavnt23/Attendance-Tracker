@@ -17,7 +17,8 @@ from app.routes import (
     slots,
     reports,
     student_dashboard,
-    student_subjects
+    student_subjects,
+    od_list
 )
 
 app = FastAPI(
@@ -66,6 +67,8 @@ app.include_router(slots.router)
 app.include_router(reports.router)
 app.include_router(student_dashboard.router)
 app.include_router(student_subjects.router)
+app.include_router(od_list.router)
+
 
 
 

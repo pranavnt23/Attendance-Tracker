@@ -532,3 +532,7 @@ class StudentSubject(Base):
     # Relationships
     student = relationship("Student", overlaps="student_subjects")
     subject = relationship("Subject", overlaps="student_subjects")
+
+
+# Register ODList model
+from app.models.od_list import ODList

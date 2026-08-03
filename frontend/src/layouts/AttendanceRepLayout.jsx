@@ -6,6 +6,7 @@ import {
   ListTodo, 
   Search, 
   BarChart3, 
+  UserCheck,
   GraduationCap,
   LogOut,
   LayoutGrid,
@@ -22,6 +23,7 @@ const AttendanceRepLayout = () => {
     { name: 'Rep Dashboard', path: '/rep/dashboard', icon: LayoutDashboard },
     { name: 'Mark Attendance', path: '/rep/mark', icon: PlusCircle },
     { name: 'Sessions', path: '/rep/sessions', icon: ListTodo },
+    { name: 'Manage OD List', path: '/rep/od-list', icon: UserCheck },
     { name: 'Student Lookup', path: '/rep/lookup', icon: Search },
     { name: 'Reports', path: '/rep/reports', icon: BarChart3 },
     { name: 'Manage Class', path: '/rep/manage', icon: Users },
@@ -32,6 +34,7 @@ const AttendanceRepLayout = () => {
     { name: 'Mark', path: '/rep/mark', icon: PlusCircle },
     { name: 'Rep Hub', path: '/rep/modules', icon: LayoutGrid },
   ];
+
 
   const handleLogout = () => {
     logout();

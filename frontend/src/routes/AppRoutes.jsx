@@ -36,6 +36,7 @@ import RepStudentLookup from '../pages/rep/StudentLookup';
 import RepReports from '../pages/rep/Reports';
 import RepHub from '../pages/rep/Hub';
 import RepManageClass from '../pages/rep/ManageClass';
+import RepManageODList from '../pages/rep/ManageODList';
 
 import { ROLES } from '../utils/constants';
 import { useAuthStore } from '../store/authStore';
@@ -88,8 +89,10 @@ const AppRoutes = () => {
             <Route path="/rep/reports" element={<RepReports />} />
             <Route path="/rep/manage" element={<RepManageClass />} />
             <Route path="/rep/modules" element={<RepHub />} />
+            <Route path="/rep/od-list" element={<RepManageODList />} />
           </Route>
         </Route>
+
 
       </Route>
 
