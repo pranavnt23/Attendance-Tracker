@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppRoutes from './routes/AppRoutes';
 import { useThemeStore } from './store/themeStore';
+import { DialogProvider } from './context/DialogContext';
 
 // Initialise TanStack Query client
 const queryClient = new QueryClient({
@@ -26,7 +27,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AppRoutes />
+        <DialogProvider>
+          <AppRoutes />
+        </DialogProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );

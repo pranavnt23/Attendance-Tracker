@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { KeyRound, UserSquare } from 'lucide-react';
+import InputField from '../../components/common/InputField';
+import Button from '../../components/common/Button';
 
 const Login = () => {
   const { login, isAuthenticating, error } = useAuth();
@@ -51,78 +53,53 @@ const Login = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Register Number Input */}
-        <div>
-          <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-            Register Number / Roll Number
-          </label>
-          <div className="relative">
-            <UserSquare className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="e.g. 20L101"
-              {...register('register_no', { 
-                required: 'Register number is required',
-                minLength: { value: 1, message: 'Too short' }
-              })}
-              className={`w-full pl-11 pr-4 py-3 bg-slate-100/50 hover:bg-slate-100 focus:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 dark:focus:bg-slate-900 border text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 ${
-                errors.register_no ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
-              }`}
-              disabled={isAuthenticating}
-            />
-          </div>
-          {errors.register_no && (
-            <p className="text-[10px] text-rose-500 font-bold mt-1.5">{errors.register_no.message}</p>
-          )}
-        </div>
+        <InputField
+          label="Register Number / Roll Number"
+          type="text"
+          placeholder="e.g. 20L101"
+          leftIcon={UserSquare}
+          error={errors.register_no}
+          disabled={isAuthenticating}
+          {...register('register_no', { 
+            required: 'Register number is required',
+            minLength: { value: 1, message: 'Too short' }
+          })}
+        />
 
         {/* Password Input */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Password
-            </label>
-            <Link 
-              to="/forgot-password" 
-              className="text-xs font-bold text-brand-primary dark:text-indigo-400 hover:underline"
-            >
-              Forgot Password?
-            </Link>
-          </div>
-          <div className="relative">
-            <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="password"
-              placeholder="••••••••"
-              {...register('password', { 
-                required: 'Password is required',
-                minLength: { value: 4, message: 'Password is too short' }
-              })}
-              className={`w-full pl-11 pr-4 py-3 bg-slate-100/50 hover:bg-slate-100 focus:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 dark:focus:bg-slate-900 border text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 ${
-                errors.password ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
-              }`}
-              disabled={isAuthenticating}
-            />
-          </div>
-          {errors.password && (
-            <p className="text-[10px] text-rose-500 font-bold mt-1.5">{errors.password.message}</p>
-          )}
-        </div>
+        <InputField
+          label={
+            <div className="flex justify-between items-center w-full">
+              <span>Password</span>
+              <Link 
+                to="/forgot-password" 
+                className="text-xs font-bold text-brand-primary dark:text-indigo-400 hover:underline normal-case tracking-normal font-sans"
+              >
+                Forgot Password?
+              </Link>
+            </div>
+          }
+          type="password"
+          placeholder="••••••••"
+          leftIcon={KeyRound}
+          error={errors.password}
+          disabled={isAuthenticating}
+          {...register('password', { 
+            required: 'Password is required',
+            minLength: { value: 4, message: 'Password is too short' }
+          })}
+        />
 
         {/* Submit Action */}
-        <button
+        <Button
           type="submit"
-          className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold text-sm shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/35 hover:-translate-y-[1px] active:translate-y-0 transition-all duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
-          disabled={isAuthenticating}
+          variant="primary"
+          size="lg"
+          className="w-full mt-2"
+          loading={isAuthenticating}
         >
-          {isAuthenticating ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-              Verifying Credentials...
-            </>
-          ) : (
-            'Sign In'
-          )}
-        </button>
+          Sign In
+        </Button>
       </form>
     </div>
   );

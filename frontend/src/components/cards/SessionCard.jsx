@@ -1,16 +1,27 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, User, Clock, Users, ArrowRight, Trash2 } from 'lucide-react';
+import { Calendar, User, Users, ArrowRight, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatShortDate } from '../../utils/dateUtils';
 import attendanceService from '../../services/attendanceService';
+import { useDialog } from '../../context/DialogContext';
 
 const SessionCard = ({ session }) => {
   const queryClient = useQueryClient();
+  const { confirm } = useDialog();
   const { session_id, session_date, slot_no, subject_name, faculty_name, attendance_count } = session;
 
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to remove the session for ${subject_name}?`)) {
+    const ok = await confirm(
+      `Are you sure you want to permanently remove the attendance session for "${subject_name}"? This action cannot be undone.`,
+      {
+        title: 'Delete Session',
+        variant: 'danger',
+        confirmLabel: 'Delete Session',
+        cancelLabel: 'Keep It',
+      }
+    );
+    if (ok) {
       await attendanceService.deleteSession(session_id);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
     }

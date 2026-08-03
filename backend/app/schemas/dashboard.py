@@ -65,6 +65,7 @@ class ActualTimetableSlot(BaseModel):
     subject_name: str
     faculty: str
     attendance_status: str = "NOT_MARKED"
+    session_id: Optional[UUID] = None
 
 
 class SubjectDetailsResponse(BaseModel):

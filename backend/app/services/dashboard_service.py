@@ -408,7 +408,8 @@ class DashboardService:
                 end_time=slot.end_time,
                 subject_name=subject_name,
                 faculty=faculty_name,
-                attendance_status=status_val
+                attendance_status=status_val,
+                session_id=session.session_id if session else None
             ))
         return results
 

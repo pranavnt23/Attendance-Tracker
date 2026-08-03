@@ -60,6 +60,41 @@ const studentService = {
     const response = await apiClient.get('/api/student/attendance/last-updated');
     return response.data;
   },
+
+  createStudent: async (studentData) => {
+    const response = await apiClient.post('/api/students', studentData);
+    return response.data;
+  },
+
+  bulkRegisterStudents: async (studentsList) => {
+    const response = await apiClient.post('/api/students/bulk', studentsList);
+    return response.data;
+  },
+
+  updateStudentRole: async (studentId, newRole) => {
+    const response = await apiClient.patch(`/api/students/${studentId}/role`, { role: newRole });
+    return response.data;
+  },
+
+  deleteStudent: async (studentId) => {
+    const response = await apiClient.delete(`/api/students/${studentId}`);
+    return response.data;
+  },
+
+  createStaff: async (staffData) => {
+    const response = await apiClient.post('/api/staff', staffData);
+    return response.data;
+  },
+
+  updateStaff: async (staffId, staffData) => {
+    const response = await apiClient.put(`/api/staff/${staffId}`, staffData);
+    return response.data;
+  },
+
+  deleteStaff: async (staffId) => {
+    const response = await apiClient.delete(`/api/staff/${staffId}`);
+    return response.data;
+  },
 };
 
 export default studentService;
