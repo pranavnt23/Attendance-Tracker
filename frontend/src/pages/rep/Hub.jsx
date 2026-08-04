@@ -8,7 +8,8 @@ import {
   Search, 
   BarChart3, 
   GraduationCap,
-  Users
+  Users,
+  UserCheck
 } from 'lucide-react';
 
 const RepHub = () => {
@@ -28,6 +29,13 @@ const RepHub = () => {
       description: 'Review, audit, or update already recorded session registers.',
       path: '/rep/sessions',
       icon: ListTodo,
+      color: 'indigo'
+    },
+    {
+      name: 'Manage OD List',
+      description: 'Approve, reject, or update student Official Duty (OD) requests.',
+      path: '/rep/od-list',
+      icon: UserCheck,
       color: 'indigo'
     },
     {
